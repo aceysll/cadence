@@ -16,12 +16,13 @@ function App() {
   const [typedText, setTypedText] = useState("");
   const [gaps, setGaps] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
-  const [state, setState] = useState("input");
+  const [state, setState] = useState("input"); // input | portrait | replaying
   const [portraitText, setPortraitText] = useState("");
   const [portraitGaps, setPortraitGaps] = useState([]);
   const [footerData, setFooterData] = useState({ avgGap: 0, peakCount: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [fontTestVisible, setFontTestVisible] = useState(false);
 
   const inputRef = useRef(null);
   const canvasRef = useRef(null);
@@ -29,6 +30,7 @@ function App() {
   const pauseTimer = useRef(null);
   const replayTimer = useRef(null);
 
+  // Reduced motion detection
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
@@ -37,12 +39,14 @@ function App() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
+  // Focus input on mount
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
   }, []);
 
+  // Find local maxima (peaks)
   const findPeaks = (points) => {
     if (points.length < 3) return [];
     const peaks = [];
@@ -54,6 +58,7 @@ function App() {
     return peaks;
   };
 
+  // Draw trace on canvas
   const drawTrace = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -68,6 +73,7 @@ function App() {
 
     ctx.clearRect(0, 0, rect.width, rect.height);
 
+    // Faint grid
     ctx.strokeStyle = PALETTE.grid;
     ctx.lineWidth = 0.5;
     ctx.globalAlpha = 0.3;
@@ -93,6 +99,7 @@ function App() {
     const drawWidth = rect.width - padding * 2;
     const maxVal = Math.max(...points.map(p => p.y), 1);
 
+    // Trace line
     ctx.beginPath();
     ctx.strokeStyle = PALETTE.phosphor;
     ctx.lineWidth = 2;
@@ -107,6 +114,7 @@ function App() {
     });
     ctx.stroke();
 
+    // Peaks as gold dots
     ctx.shadowBlur = 0;
     const peaks = findPeaks(points);
     peaks.forEach((peakIdx) => {
@@ -120,6 +128,7 @@ function App() {
     });
   }, []);
 
+  // Commit typing: transition to portrait
   const commitTyping = useCallback(() => {
     if (typedText.trim().length === 0) return;
     clearTimeout(pauseTimer.current);
@@ -135,24 +144,7 @@ function App() {
     setFooterData({ avgGap, peakCount: peaks.length });
   }, [typedText, gaps]);
 
-  const resetAll = useCallback(() => {
-    clearTimeout(pauseTimer.current);
-    clearTimeout(replayTimer.current);
-    setTypedText("");
-    setGaps([]);
-    setTimestamps([]);
-    setState("input");
-    setPortraitText("");
-    setPortraitGaps([]);
-    setFooterData({ avgGap: 0, peakCount: 0 });
-    setIsReplaying(false);
-    tracePoints.current = [];
-    drawTrace();
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [drawTrace]);
-
+  // Replay the session
   const replaySession = useCallback(() => {
     if (portraitText.length === 0 || isReplaying) return;
     setIsReplaying(true);
@@ -190,12 +182,12 @@ function App() {
     animateReplay();
   }, [portraitText, portraitGaps, drawTrace, isReplaying]);
 
-  // Handle text input and keystroke timing
+  // Handle input changes (mobile-friendly)
   const handleInputChange = useCallback((e) => {
     const newText = e.target.value;
     const now = performance.now();
 
-    // If text is shorter, user deleted
+    // Deletion
     if (newText.length < typedText.length) {
       setTypedText(newText);
       setGaps(gaps.slice(0, newText.length));
@@ -207,7 +199,7 @@ function App() {
       return;
     }
 
-    // Added a character
+    // Addition
     const lastTimestamp = timestamps[timestamps.length - 1] || 0;
     const gap = lastTimestamp > 0 ? now - lastTimestamp : 0;
 
@@ -232,6 +224,31 @@ function App() {
     }
   }, [typedText, commitTyping]);
 
+  // Reset (now only called on replay finish or manual reset via top bar)
+  const resetAll = useCallback(() => {
+    clearTimeout(pauseTimer.current);
+    clearTimeout(replayTimer.current);
+    setTypedText("");
+    setGaps([]);
+    setTimestamps([]);
+    setState("input");
+    setPortraitText("");
+    setPortraitGaps([]);
+    setFooterData({ avgGap: 0, peakCount: 0 });
+    setIsReplaying(false);
+    tracePoints.current = [];
+    drawTrace();
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [drawTrace]);
+
+  // Toggle font test mode (for verification)
+  const toggleFontTest = () => {
+    setFontTestVisible(!fontTestVisible);
+  };
+
+  // Render the portrait
   const renderPortrait = () => {
     if (state !== "portrait" && state !== "replaying") return null;
 
@@ -259,40 +276,40 @@ function App() {
     return (
       <div
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
+          flex: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           padding: "40px 20px",
           background: PALETTE.paper,
-          zIndex: 10,
+          width: "100%",
         }}
       >
         <div
           style={{
             fontFamily: "'Recursive', sans-serif",
-            fontSize: "clamp(24px, 6vw, 56px)",
-            lineHeight: 1.4,
+            fontSize: "clamp(28px, 7vw, 64px)",
+            lineHeight: 1.3,
             color: PALETTE.ink,
             maxWidth: "800px",
             width: "100%",
-            textAlign: "left",
+            textAlign: "center",
             wordBreak: "break-word",
           }}
         >
           {chars.map((char, i) => {
             const t = getTransform(i);
+            // Staggered reveal: each letter appears with a slight delay
+            const delay = isReduced ? 0 : i * 20;
             return (
               <span
                 key={i}
                 style={{
                   fontVariationSettings: `'wght' ${t.weight}, 'wdth' ${t.width}, 'slnt' ${t.slant}`,
                   display: "inline-block",
-                  transition: isReduced ? "none" : "font-variation-settings 0.3s ease",
+                  transition: isReduced
+                    ? "none"
+                    : `font-variation-settings 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${delay}ms`,
                   marginRight: "2px",
                 }}
               >
@@ -305,6 +322,48 @@ function App() {
     );
   };
 
+  // Font test overlay (for verification)
+  const renderFontTest = () => {
+    if (!fontTestVisible) return null;
+    return (
+      <div
+        style={{
+          position: "fixed",
+          top: 60,
+          left: 20,
+          right: 20,
+          background: "white",
+          border: `1px solid ${PALETTE.grid}`,
+          padding: 20,
+          zIndex: 100,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          fontFamily: "'Recursive', sans-serif",
+        }}
+      >
+        <div style={{ fontSize: 14, marginBottom: 8, fontWeight: 600 }}>Font Test</div>
+        <div style={{ fontVariationSettings: "'wght' 300, 'wdth' 50", fontSize: 24 }}>Thin & Narrow</div>
+        <div style={{ fontVariationSettings: "'wght' 800, 'wdth' 150", fontSize: 24, marginTop: 8 }}>Bold & Wide</div>
+        <div style={{ fontVariationSettings: "'wght' 500, 'wdth' 100, 'slnt' -10", fontSize: 24, marginTop: 8 }}>Slanted Medium</div>
+        <button
+          onClick={toggleFontTest}
+          style={{
+            marginTop: 12,
+            background: PALETTE.ink,
+            color: PALETTE.paper,
+            border: "none",
+            padding: "4px 12px",
+            fontSize: 12,
+            fontFamily: "'IBM Plex Mono', monospace",
+            cursor: "pointer",
+          }}
+        >
+          close
+        </button>
+      </div>
+    );
+  };
+
+  // Effects
   useEffect(() => {
     const handleResize = () => {
       if (state === "input" || state === "replaying") {
@@ -334,9 +393,8 @@ function App() {
         position: "relative",
         overflow: "hidden",
       }}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
     >
+      {/* Top bar */}
       <div
         style={{
           display: "flex",
@@ -356,6 +414,13 @@ function App() {
           <span style={{ fontSize: 10, color: PALETTE.grid }}>
             by ace
           </span>
+          {/* Hidden font test toggle (double-click on "by ace" to reveal) */}
+          <span
+            style={{ fontSize: 10, color: "transparent", cursor: "pointer" }}
+            onDoubleClick={toggleFontTest}
+          >
+            .
+          </span>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           {(state === "portrait" || state === "replaying") && (
@@ -366,57 +431,43 @@ function App() {
                 background: "none",
                 border: `1px solid ${PALETTE.grid}`,
                 color: PALETTE.ink,
-                padding: "4px 12px",
+                padding: "4px 16px",
                 fontSize: 10,
                 cursor: isReplaying ? "not-allowed" : "pointer",
                 opacity: isReplaying ? 0.5 : 1,
                 fontFamily: "'IBM Plex Mono', monospace",
-                letterSpacing: "0.05em",
-                borderRadius: 2,
-                transition: "border-color 0.2s",
+                letterSpacing: "0.08em",
+                borderRadius: 0,
+                transition: "background 0.15s, color 0.15s, border-color 0.15s",
+                textTransform: "uppercase",
               }}
               onMouseEnter={(e) => {
-                if (!isReplaying) e.target.style.borderColor = PALETTE.gold;
+                if (!isReplaying) {
+                  e.target.style.background = PALETTE.ink;
+                  e.target.style.color = PALETTE.paper;
+                  e.target.style.borderColor = PALETTE.ink;
+                }
               }}
               onMouseLeave={(e) => {
+                e.target.style.background = "none";
+                e.target.style.color = PALETTE.ink;
                 e.target.style.borderColor = PALETTE.grid;
               }}
             >
-              {isReplaying ? "replaying..." : "replay"}
+              {isReplaying ? "replaying…" : "replay"}
             </button>
           )}
-          <button
-            onClick={resetAll}
-            style={{
-              background: "none",
-              border: `1px solid ${PALETTE.grid}`,
-              color: PALETTE.ink,
-              padding: "4px 12px",
-              fontSize: 10,
-              cursor: "pointer",
-              fontFamily: "'IBM Plex Mono', monospace",
-              letterSpacing: "0.05em",
-              borderRadius: 2,
-              transition: "border-color 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.borderColor = PALETTE.gold;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.borderColor = PALETTE.grid;
-            }}
-          >
-            reset
-          </button>
         </div>
       </div>
 
+      {/* Main content */}
       <div
         style={{
           flex: 1,
           display: "flex",
           flexDirection: "column",
           position: "relative",
+          overflow: "hidden",
         }}
       >
         {state === "input" && (
@@ -427,15 +478,17 @@ function App() {
               display: "flex",
               flexDirection: "column",
               position: "relative",
+              minHeight: "60vh",
             }}
           >
+            {/* Trace canvas */}
             <div
               style={{
                 flex: 1,
                 position: "relative",
                 background: PALETTE.paper,
                 border: `1px solid ${PALETTE.grid}`,
-                borderRadius: 2,
+                borderRadius: 0,
                 overflow: "hidden",
                 minHeight: 200,
               }}
@@ -467,6 +520,7 @@ function App() {
               />
             </div>
 
+            {/* Input prompt */}
             <div
               style={{
                 paddingTop: "16px",
@@ -477,7 +531,7 @@ function App() {
                 marginTop: "auto",
               }}
             >
-              <span style={{ fontSize: 12, color: PALETTE.grid }}>
+              <span style={{ fontSize: 12, color: PALETTE.grid, userSelect: "none" }}>
                 {">"}
               </span>
               <input
@@ -486,7 +540,7 @@ function App() {
                 value={typedText}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="type something..."
+                placeholder="type something…"
                 style={{
                   background: "none",
                   border: "none",
@@ -497,8 +551,7 @@ function App() {
                   flex: 1,
                   padding: "4px 0",
                   caretColor: PALETTE.gold,
-                  WebkitTransform: "scale(1)",
-                  transform: "scale(1)",
+                  width: "100%",
                 }}
                 autoFocus
               />
@@ -517,37 +570,35 @@ function App() {
           </div>
         )}
 
+        {/* Portrait view */}
         {(state === "portrait" || state === "replaying") && renderPortrait()}
-
-        <div
-          style={{
-            padding: "12px 20px",
-            borderTop: `1px solid ${PALETTE.grid}`,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            background: PALETTE.paper,
-            zIndex: 20,
-            position: "relative",
-            fontSize: 10,
-            color: PALETTE.grid,
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}
-        >
-          <span>
-            avg gap: {footerData.avgGap}ms
-          </span>
-          <span>
-            peaks: {footerData.peakCount}
-          </span>
-          <span>
-            {state === "input" && "ready"}
-            {state === "portrait" && "✓ portrait"}
-            {state === "replaying" && "replaying..."}
-          </span>
-        </div>
       </div>
 
+      {/* Footer / Data readout */}
+      <div
+        style={{
+          padding: "8px 20px",
+          borderTop: `1px solid ${PALETTE.grid}`,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          background: PALETTE.paper,
+          zIndex: 20,
+          position: "relative",
+          fontSize: 9,
+          color: PALETTE.grid,
+          fontFamily: "'IBM Plex Mono', monospace",
+          letterSpacing: "0.04em",
+        }}
+      >
+        <span>
+          avg gap: {footerData.avgGap}ms &nbsp;&bull;&nbsp; peaks: {footerData.peakCount}
+          {state === "portrait" && " &bull; portrait"}
+          {state === "replaying" && " &bull; replaying…"}
+        </span>
+      </div>
+
+      {/* Ambient grid texture overlay */}
       <div
         style={{
           position: "fixed",
@@ -558,12 +609,15 @@ function App() {
           pointerEvents: "none",
           zIndex: 0,
           backgroundImage: `
-            linear-gradient(rgba(185, 175, 160, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(185, 175, 160, 0.03) 1px, transparent 1px)
+            linear-gradient(rgba(185, 175, 160, 0.02) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(185, 175, 160, 0.02) 1px, transparent 1px)
           `,
           backgroundSize: "20px 20px",
         }}
       />
+
+      {/* Font test overlay */}
+      {renderFontTest()}
     </div>
   );
 }
