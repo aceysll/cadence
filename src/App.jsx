@@ -16,13 +16,13 @@ function App() {
   const [typedText, setTypedText] = useState("");
   const [gaps, setGaps] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
-  const [state, setState] = useState("input"); // input | portrait | replaying
+  const [state, setState] = useState("input");
   const [portraitText, setPortraitText] = useState("");
   const [portraitGaps, setPortraitGaps] = useState([]);
   const [footerData, setFooterData] = useState({ avgGap: 0, peakCount: 0 });
   const [reducedMotion, setReducedMotion] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
-  const [fontTestVisible, setFontTestVisible] = useState(false);
+  const [fontLoaded, setFontLoaded] = useState(false);
 
   const inputRef = useRef(null);
   const canvasRef = useRef(null);
@@ -30,7 +30,6 @@ function App() {
   const pauseTimer = useRef(null);
   const replayTimer = useRef(null);
 
-  // Reduced motion detection
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     setReducedMotion(mediaQuery.matches);
@@ -39,14 +38,14 @@ function App() {
     return () => mediaQuery.removeEventListener("change", handler);
   }, []);
 
-  // Focus input on mount
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
     }
+    // Check if font loaded
+    document.fonts.load('16px Recursive').then(() => setFontLoaded(true));
   }, []);
 
-  // Find local maxima (peaks)
   const findPeaks = (points) => {
     if (points.length < 3) return [];
     const peaks = [];
@@ -58,7 +57,6 @@ function App() {
     return peaks;
   };
 
-  // Draw trace on canvas
   const drawTrace = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -73,7 +71,6 @@ function App() {
 
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    // Faint grid
     ctx.strokeStyle = PALETTE.grid;
     ctx.lineWidth = 0.5;
     ctx.globalAlpha = 0.3;
@@ -99,7 +96,6 @@ function App() {
     const drawWidth = rect.width - padding * 2;
     const maxVal = Math.max(...points.map(p => p.y), 1);
 
-    // Trace line
     ctx.beginPath();
     ctx.strokeStyle = PALETTE.phosphor;
     ctx.lineWidth = 2;
@@ -114,7 +110,6 @@ function App() {
     });
     ctx.stroke();
 
-    // Peaks as gold dots
     ctx.shadowBlur = 0;
     const peaks = findPeaks(points);
     peaks.forEach((peakIdx) => {
@@ -128,7 +123,6 @@ function App() {
     });
   }, []);
 
-  // Commit typing: transition to portrait
   const commitTyping = useCallback(() => {
     if (typedText.trim().length === 0) return;
     clearTimeout(pauseTimer.current);
@@ -144,7 +138,24 @@ function App() {
     setFooterData({ avgGap, peakCount: peaks.length });
   }, [typedText, gaps]);
 
-  // Replay the session
+  const resetAll = useCallback(() => {
+    clearTimeout(pauseTimer.current);
+    clearTimeout(replayTimer.current);
+    setTypedText("");
+    setGaps([]);
+    setTimestamps([]);
+    setState("input");
+    setPortraitText("");
+    setPortraitGaps([]);
+    setFooterData({ avgGap: 0, peakCount: 0 });
+    setIsReplaying(false);
+    tracePoints.current = [];
+    drawTrace();
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [drawTrace]);
+
   const replaySession = useCallback(() => {
     if (portraitText.length === 0 || isReplaying) return;
     setIsReplaying(true);
@@ -182,12 +193,10 @@ function App() {
     animateReplay();
   }, [portraitText, portraitGaps, drawTrace, isReplaying]);
 
-  // Handle input changes (mobile-friendly)
   const handleInputChange = useCallback((e) => {
     const newText = e.target.value;
     const now = performance.now();
 
-    // Deletion
     if (newText.length < typedText.length) {
       setTypedText(newText);
       setGaps(gaps.slice(0, newText.length));
@@ -199,7 +208,6 @@ function App() {
       return;
     }
 
-    // Addition
     const lastTimestamp = timestamps[timestamps.length - 1] || 0;
     const gap = lastTimestamp > 0 ? now - lastTimestamp : 0;
 
@@ -224,31 +232,6 @@ function App() {
     }
   }, [typedText, commitTyping]);
 
-  // Reset (now only called on replay finish or manual reset via top bar)
-  const resetAll = useCallback(() => {
-    clearTimeout(pauseTimer.current);
-    clearTimeout(replayTimer.current);
-    setTypedText("");
-    setGaps([]);
-    setTimestamps([]);
-    setState("input");
-    setPortraitText("");
-    setPortraitGaps([]);
-    setFooterData({ avgGap: 0, peakCount: 0 });
-    setIsReplaying(false);
-    tracePoints.current = [];
-    drawTrace();
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [drawTrace]);
-
-  // Toggle font test mode (for verification)
-  const toggleFontTest = () => {
-    setFontTestVisible(!fontTestVisible);
-  };
-
-  // Render the portrait
   const renderPortrait = () => {
     if (state !== "portrait" && state !== "replaying") return null;
 
@@ -299,7 +282,6 @@ function App() {
         >
           {chars.map((char, i) => {
             const t = getTransform(i);
-            // Staggered reveal: each letter appears with a slight delay
             const delay = isReduced ? 0 : i * 20;
             return (
               <span
@@ -322,48 +304,6 @@ function App() {
     );
   };
 
-  // Font test overlay (for verification)
-  const renderFontTest = () => {
-    if (!fontTestVisible) return null;
-    return (
-      <div
-        style={{
-          position: "fixed",
-          top: 60,
-          left: 20,
-          right: 20,
-          background: "white",
-          border: `1px solid ${PALETTE.grid}`,
-          padding: 20,
-          zIndex: 100,
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          fontFamily: "'Recursive', sans-serif",
-        }}
-      >
-        <div style={{ fontSize: 14, marginBottom: 8, fontWeight: 600 }}>Font Test</div>
-        <div style={{ fontVariationSettings: "'wght' 300, 'wdth' 50", fontSize: 24 }}>Thin & Narrow</div>
-        <div style={{ fontVariationSettings: "'wght' 800, 'wdth' 150", fontSize: 24, marginTop: 8 }}>Bold & Wide</div>
-        <div style={{ fontVariationSettings: "'wght' 500, 'wdth' 100, 'slnt' -10", fontSize: 24, marginTop: 8 }}>Slanted Medium</div>
-        <button
-          onClick={toggleFontTest}
-          style={{
-            marginTop: 12,
-            background: PALETTE.ink,
-            color: PALETTE.paper,
-            border: "none",
-            padding: "4px 12px",
-            fontSize: 12,
-            fontFamily: "'IBM Plex Mono', monospace",
-            cursor: "pointer",
-          }}
-        >
-          close
-        </button>
-      </div>
-    );
-  };
-
-  // Effects
   useEffect(() => {
     const handleResize = () => {
       if (state === "input" || state === "replaying") {
@@ -394,7 +334,6 @@ function App() {
         overflow: "hidden",
       }}
     >
-      {/* Top bar */}
       <div
         style={{
           display: "flex",
@@ -413,13 +352,6 @@ function App() {
           </span>
           <span style={{ fontSize: 10, color: PALETTE.grid }}>
             by ace
-          </span>
-          {/* Hidden font test toggle (double-click on "by ace" to reveal) */}
-          <span
-            style={{ fontSize: 10, color: "transparent", cursor: "pointer" }}
-            onDoubleClick={toggleFontTest}
-          >
-            .
           </span>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
@@ -460,7 +392,6 @@ function App() {
         </div>
       </div>
 
-      {/* Main content */}
       <div
         style={{
           flex: 1,
@@ -481,7 +412,6 @@ function App() {
               minHeight: "60vh",
             }}
           >
-            {/* Trace canvas */}
             <div
               style={{
                 flex: 1,
@@ -520,7 +450,6 @@ function App() {
               />
             </div>
 
-            {/* Input prompt */}
             <div
               style={{
                 paddingTop: "16px",
@@ -570,11 +499,9 @@ function App() {
           </div>
         )}
 
-        {/* Portrait view */}
         {(state === "portrait" || state === "replaying") && renderPortrait()}
       </div>
 
-      {/* Footer / Data readout */}
       <div
         style={{
           padding: "8px 20px",
@@ -598,7 +525,6 @@ function App() {
         </span>
       </div>
 
-      {/* Ambient grid texture overlay */}
       <div
         style={{
           position: "fixed",
@@ -615,9 +541,6 @@ function App() {
           backgroundSize: "20px 20px",
         }}
       />
-
-      {/* Font test overlay */}
-      {renderFontTest()}
     </div>
   );
 }
