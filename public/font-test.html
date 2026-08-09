@@ -6,7 +6,7 @@
   <title>Cadence — Font Test</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Recursive:opsz,wght,CASL,slnt,CRSV,MONO@14..32,300..800,0..1,-15..0,0..1,0..1&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Recursive&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     body {
       background: #E7E2D6;
@@ -69,10 +69,18 @@
       color: #555;
       line-height: 1.6;
     }
+    .success {
+      background: #e8f5ee;
+      border-color: #3F6F5E;
+    }
+    .fail {
+      background: #f5e8e8;
+      border-color: #c89b3c;
+    }
   </style>
 </head>
 <body>
-  <h1>cadence — font test</h1>
+  <h1>cadence — font test (standalone)</h1>
 
   <div class="test-group">
     <label>1. Default (no variation)</label>
@@ -124,19 +132,46 @@
     </div>
   </div>
 
-  <div class="verdict">
-    <h2>What to check</h2>
-    <p>
-      Each sample should look visibly different from the others.<br />
-      <strong>If they all look the same:</strong> the variable font is not loading correctly.<br />
-      <strong>If they look different:</strong> the font is working — proceed with Cadence.
-    </p>
-    <p style="margin-top: 8px; font-size: 12px;">
-      <strong>Note:</strong> Sample 2 should appear thin and narrow.<br />
-      Sample 3 should appear bold and wide.<br />
-      Sample 4 should be slanted.<br />
-      Sample 5 should have a more casual, rounded feel.
-    </p>
+  <div class="verdict" id="verdict">
+    <h2>⏳ Checking...</h2>
+    <p>Loading font test. The samples should look visibly different.</p>
   </div>
+
+  <script>
+    // Check if samples look different
+    setTimeout(() => {
+      const samples = document.querySelectorAll('.sample');
+      const firstText = samples[0].getBoundingClientRect();
+      const secondText = samples[1].getBoundingClientRect();
+      const verdict = document.getElementById('verdict');
+
+      // Check if width or height differs significantly
+      const widthDiff = Math.abs(samples[0].offsetWidth - samples[1].offsetWidth);
+      const heightDiff = Math.abs(samples[0].offsetHeight - samples[1].offsetHeight);
+
+      if (widthDiff > 10 || heightDiff > 10) {
+        verdict.className = 'verdict success';
+        verdict.innerHTML = `
+          <h2>✅ Font is working!</h2>
+          <p>The samples look visibly different. The variable font is loading correctly.</p>
+          <p style="margin-top: 8px; font-size: 12px;">
+            Width diff: ${widthDiff}px &bull; Height diff: ${heightDiff}px
+          </p>
+        `;
+      } else {
+        verdict.className = 'verdict fail';
+        verdict.innerHTML = `
+          <h2>❌ Font is NOT working</h2>
+          <p>The samples look identical. The variable font is not loading correctly.</p>
+          <p style="margin-top: 8px; font-size: 12px;">
+            Width diff: ${widthDiff}px &bull; Height diff: ${heightDiff}px
+          </p>
+          <p style="margin-top: 8px; font-size: 12px; color: #c89b3c;">
+            Check the font URL. Try: https://fonts.googleapis.com/css2?family=Recursive
+          </p>
+        `;
+      }
+    }, 1500);
+  </script>
 </body>
 </html>
