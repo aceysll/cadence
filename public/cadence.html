@@ -71,6 +71,11 @@
       flex-direction: column;
     }
 
+    /* Force hide */
+    #inputState.hidden-state {
+      display: none !important;
+    }
+
     #traceContainer {
       flex: 1;
       position: relative;
@@ -134,6 +139,11 @@
       justify-content: center;
       padding: 40px 20px;
       background: #E7E2D6;
+    }
+
+    /* Force show */
+    #portraitState.visible-state {
+      display: flex !important;
     }
 
     #portraitText {
@@ -259,9 +269,8 @@
 
     function showPortrait() {
       isPortrait = true;
-      // Direct style manipulation
-      inputState.style.display = 'none';
-      portraitState.style.display = 'flex';
+      inputState.classList.add('hidden-state');
+      portraitState.classList.add('visible-state');
       replayBtn.disabled = false;
       commitBtn.disabled = true;
       footer.textContent = 'portrait — tap replay to watch the trace again';
@@ -296,8 +305,8 @@
       trace = [];
       portraitData = '';
       textInput.value = '';
-      inputState.style.display = 'flex';
-      portraitState.style.display = 'none';
+      inputState.classList.remove('hidden-state');
+      portraitState.classList.remove('visible-state');
       replayBtn.disabled = true;
       commitBtn.disabled = true;
       footer.textContent = 'type something, then tap "reveal"';
@@ -317,8 +326,8 @@
       });
       trace = pts;
 
-      inputState.style.display = 'flex';
-      portraitState.style.display = 'none';
+      inputState.classList.remove('hidden-state');
+      portraitState.classList.remove('visible-state');
       draw();
 
       let step = 0;
