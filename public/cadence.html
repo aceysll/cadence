@@ -70,7 +70,6 @@
       display: flex;
       flex-direction: column;
     }
-    #inputState.hidden { display: none !important; }
 
     #traceContainer {
       flex: 1;
@@ -136,7 +135,6 @@
       padding: 40px 20px;
       background: #E7E2D6;
     }
-    #portraitState.visible { display: flex !important; }
 
     #portraitText {
       font-family: 'Recursive', sans-serif;
@@ -161,22 +159,6 @@
       color: #B9AFA0;
       font-family: 'IBM Plex Mono', monospace;
       flex-shrink: 0;
-    }
-    #debug {
-      position: fixed;
-      bottom: 50px;
-      left: 10px;
-      right: 10px;
-      background: rgba(23, 21, 18, 0.9);
-      color: #00ff41;
-      font-size: 10px;
-      padding: 8px 12px;
-      border-radius: 4px;
-      max-height: 80px;
-      overflow-y: auto;
-      z-index: 999;
-      font-family: 'IBM Plex Mono', monospace;
-      display: none;
     }
   </style>
 </head>
@@ -207,7 +189,6 @@
 </div>
 
 <div class="footer" id="footer">type something, then tap "reveal"</div>
-<div id="debug"></div>
 
 <script>
   (function() {
@@ -220,14 +201,6 @@
     const footer = document.getElementById('footer');
     const replayBtn = document.getElementById('replayBtn');
     const commitBtn = document.getElementById('commitBtn');
-    const debug = document.getElementById('debug');
-
-    function log(msg) {
-      debug.style.display = 'block';
-      debug.innerHTML += new Date().toLocaleTimeString() + ' ' + msg + '\n';
-      debug.scrollTop = debug.scrollHeight;
-      console.log(msg);
-    }
 
     let text = '';
     let trace = [];
@@ -285,18 +258,15 @@
     }
 
     function showPortrait() {
-      log('showPortrait called');
       isPortrait = true;
-      inputState.classList.add('hidden');
-      portraitState.classList.add('visible');
+      // Direct style manipulation
+      inputState.style.display = 'none';
+      portraitState.style.display = 'flex';
       replayBtn.disabled = false;
       commitBtn.disabled = true;
       footer.textContent = 'portrait — tap replay to watch the trace again';
-      log('portrait visible');
 
       const chars = portraitData.split('');
-      log('chars: ' + chars.length);
-
       portraitTextEl.innerHTML = '';
       chars.forEach((ch, i) => {
         const weight = 300 + (i / Math.max(chars.length - 1, 1)) * 500;
@@ -308,28 +278,16 @@
         span.style.transition = `font-variation-settings 0.4s ease ${i * 20}ms`;
         portraitTextEl.appendChild(span);
       });
-      log('portrait rendered');
-      
-      // Force visibility check
-      const rect = portraitState.getBoundingClientRect();
-      log('portraitState rect: ' + rect.width + 'x' + rect.height);
-      log('portraitState display: ' + window.getComputedStyle(portraitState).display);
     }
 
     function commit() {
-      log('commit called, isPortrait=' + isPortrait + ', text length=' + text.trim().length);
-      if (isPortrait || text.trim().length === 0) {
-        log('commit blocked');
-        return;
-      }
+      if (isPortrait || text.trim().length === 0) return;
       clearTimeout(pauseTimer);
       portraitData = text;
-      log('portraitData set to: ' + portraitData);
       showPortrait();
     }
 
     function resetToInput() {
-      log('resetToInput');
       clearTimeout(pauseTimer);
       clearTimeout(replayTimer);
       isPortrait = false;
@@ -338,8 +296,8 @@
       trace = [];
       portraitData = '';
       textInput.value = '';
-      inputState.classList.remove('hidden');
-      portraitState.classList.remove('visible');
+      inputState.style.display = 'flex';
+      portraitState.style.display = 'none';
       replayBtn.disabled = true;
       commitBtn.disabled = true;
       footer.textContent = 'type something, then tap "reveal"';
@@ -348,11 +306,7 @@
     }
 
     function replay() {
-      log('replay called');
-      if (isReplaying || portraitData.length === 0) {
-        log('replay blocked');
-        return;
-      }
+      if (isReplaying || portraitData.length === 0) return;
       isReplaying = true;
       replayBtn.disabled = true;
 
@@ -363,15 +317,14 @@
       });
       trace = pts;
 
-      inputState.classList.remove('hidden');
-      portraitState.classList.remove('visible');
+      inputState.style.display = 'flex';
+      portraitState.style.display = 'none';
       draw();
 
       let step = 0;
       function stepReplay() {
         if (step >= pts.length) {
           isReplaying = false;
-          log('replay done');
           showPortrait();
           return;
         }
@@ -384,11 +337,7 @@
     }
 
     function onInput(e) {
-      log('input event, value length=' + e.target.value.length);
-      if (isPortrait) {
-        log('ignored, isPortrait true');
-        return;
-      }
+      if (isPortrait) return;
       const val = e.target.value;
       text = val;
 
@@ -402,16 +351,13 @@
 
       if (val.trim().length > 0) {
         commitBtn.disabled = false;
-        log('commitBtn enabled');
       } else {
         commitBtn.disabled = true;
-        log('commitBtn disabled');
       }
 
       clearTimeout(pauseTimer);
       if (val.trim().length > 0) {
         pauseTimer = setTimeout(commit, PAUSE_MS);
-        log('pause timer set');
       }
     }
 
@@ -420,34 +366,17 @@
     }
 
     function init() {
-      log('init called');
       textInput.addEventListener('input', onInput);
-      commitBtn.addEventListener('click', function(e) {
-        log('commitBtn clicked');
-        commit();
-      });
+      commitBtn.addEventListener('click', commit);
       replayBtn.addEventListener('click', replay);
       window.addEventListener('resize', onResize);
       draw();
       textInput.focus();
-      log('init complete');
     }
 
-    document.fonts.load('16px Recursive').then(function() {
-      log('font loaded');
-      init();
-    }).catch(function() {
-      log('font load failed, starting anyway');
-      init();
-    });
-
-    if (document.readyState === 'complete') {
-      setTimeout(function() { init(); }, 100);
-    } else {
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(function() { init(); }, 100);
-      });
-    }
+    document.fonts.load('16px Recursive').then(init).catch(init);
+    if (document.readyState === 'complete') setTimeout(init, 100);
+    else document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
   })();
 </script>
 </body>
