@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadence — Font Test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Recursive:opsz,wght,CASL,slnt,CRSV,MONO@14..32,300..800,0..1,-15..0,0..1,0..1&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #E7E2D6;
+      font-family: 'IBM Plex Mono', monospace;
+      padding: 40px;
+      color: #171512;
+    }
+    h1 {
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      color: #B9AFA0;
+      margin-bottom: 40px;
+    }
+    .test-group {
+      margin-bottom: 30px;
+      border-bottom: 1px solid #B9AFA0;
+      padding-bottom: 20px;
+    }
+    .test-group label {
+      display: block;
+      font-size: 11px;
+      color: #B9AFA0;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .sample {
+      font-family: 'Recursive', sans-serif;
+      font-size: 28px;
+      line-height: 1.4;
+      padding: 8px 0;
+    }
+    .sample-note {
+      font-size: 11px;
+      color: #B9AFA0;
+      margin-top: 4px;
+    }
+    .test-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .verdict {
+      margin-top: 40px;
+      padding: 16px 20px;
+      background: white;
+      border: 1px solid #B9AFA0;
+    }
+    .verdict h2 {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #171512;
+      margin-bottom: 6px;
+    }
+    .verdict p {
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>cadence — font test</h1>
+
+  <div class="test-group">
+    <label>1. Default (no variation)</label>
+    <div class="test-row">
+      <div class="sample" style="font-variation-settings: normal;">
+        The quick brown fox jumps over the lazy dog.
+      </div>
+      <div class="sample-note">font-variation-settings: normal;</div>
+    </div>
+  </div>
+
+  <div class="test-group">
+    <label>2. Thin &amp; Narrow (wght 300, wdth 50)</label>
+    <div class="test-row">
+      <div class="sample" style="font-variation-settings: 'wght' 300, 'wdth' 50;">
+        The quick brown fox jumps over the lazy dog.
+      </div>
+      <div class="sample-note">'wght' 300, 'wdth' 50</div>
+    </div>
+  </div>
+
+  <div class="test-group">
+    <label>3. Bold &amp; Wide (wght 800, wdth 150)</label>
+    <div class="test-row">
+      <div class="sample" style="font-variation-settings: 'wght' 800, 'wdth' 150;">
+        The quick brown fox jumps over the lazy dog.
+      </div>
+      <div class="sample-note">'wght' 800, 'wdth' 150</div>
+    </div>
+  </div>
+
+  <div class="test-group">
+    <label>4. Slanted Medium (wght 500, wdth 100, slnt -10)</label>
+    <div class="test-row">
+      <div class="sample" style="font-variation-settings: 'wght' 500, 'wdth' 100, 'slnt' -10;">
+        The quick brown fox jumps over the lazy dog.
+      </div>
+      <div class="sample-note">'wght' 500, 'wdth' 100, 'slnt' -10</div>
+    </div>
+  </div>
+
+  <div class="test-group">
+    <label>5. Casual Bold (wght 700, CASL 1)</label>
+    <div class="test-row">
+      <div class="sample" style="font-variation-settings: 'wght' 700, 'CASL' 1;">
+        The quick brown fox jumps over the lazy dog.
+      </div>
+      <div class="sample-note">'wght' 700, 'CASL' 1</div>
+    </div>
+  </div>
+
+  <div class="verdict">
+    <h2>What to check</h2>
+    <p>
+      Each sample should look visibly different from the others.<br />
+      <strong>If they all look the same:</strong> the variable font is not loading correctly.<br />
+      <strong>If they look different:</strong> the font is working — proceed with Cadence.
+    </p>
+    <p style="margin-top: 8px; font-size: 12px;">
+      <strong>Note:</strong> Sample 2 should appear thin and narrow.<br />
+      Sample 3 should appear bold and wide.<br />
+      Sample 4 should be slanted.<br />
+      Sample 5 should have a more casual, rounded feel.
+    </p>
+  </div>
+</body>
+</html>
