@@ -108,7 +108,7 @@
 
     #commitBtn {
       background: none;
-      border: 1px solid #171512;
+      border: 1px solid #B9AFA0;
       color: #171512;
       padding: 4px 16px;
       font-size: 11px;
@@ -162,6 +162,22 @@
       font-family: 'IBM Plex Mono', monospace;
       flex-shrink: 0;
     }
+    #debug {
+      position: fixed;
+      bottom: 50px;
+      left: 10px;
+      right: 10px;
+      background: rgba(23, 21, 18, 0.9);
+      color: #00ff41;
+      font-size: 10px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      max-height: 80px;
+      overflow-y: auto;
+      z-index: 999;
+      font-family: 'IBM Plex Mono', monospace;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -191,205 +207,253 @@
 </div>
 
 <div class="footer" id="footer">type something, then tap "reveal"</div>
+<div id="debug"></div>
 
 <script>
-  // --- DOM ---
-  const inputState = document.getElementById('inputState');
-  const portraitState = document.getElementById('portraitState');
-  const portraitTextEl = document.getElementById('portraitText');
-  const textInput = document.getElementById('textInput');
-  const canvas = document.getElementById('traceCanvas');
-  const ctx = canvas.getContext('2d');
-  const footer = document.getElementById('footer');
-  const replayBtn = document.getElementById('replayBtn');
-  const commitBtn = document.getElementById('commitBtn');
+  (function() {
+    // --- DOM ---
+    const inputState = document.getElementById('inputState');
+    const portraitState = document.getElementById('portraitState');
+    const portraitTextEl = document.getElementById('portraitText');
+    const textInput = document.getElementById('textInput');
+    const canvas = document.getElementById('traceCanvas');
+    const ctx = canvas.getContext('2d');
+    const footer = document.getElementById('footer');
+    const replayBtn = document.getElementById('replayBtn');
+    const commitBtn = document.getElementById('commitBtn');
+    const debug = document.getElementById('debug');
 
-  // --- State ---
-  let text = '';
-  let trace = [];
-  let portraitData = '';
-  let isPortrait = false;
-  let isReplaying = false;
-  let replayTimer = null;
-  let pauseTimer = null;
-
-  const PAUSE_MS = 1500;
-
-  // --- Draw ---
-  function draw() {
-    const rect = canvas.parentElement.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    canvas.style.width = rect.width + 'px';
-    canvas.style.height = rect.height + 'px';
-    ctx.scale(dpr, dpr);
-
-    ctx.clearRect(0, 0, rect.width, rect.height);
-
-    ctx.strokeStyle = '#B9AFA0';
-    ctx.lineWidth = 0.5;
-    ctx.globalAlpha = 0.2;
-    for (let x = 0; x <= rect.width; x += 20) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
+    function log(msg) {
+      debug.style.display = 'block';
+      debug.innerHTML += new Date().toLocaleTimeString() + ' ' + msg + '\n';
+      debug.scrollTop = debug.scrollHeight;
+      console.log(msg);
     }
-    for (let y = 0; y <= rect.height; y += 20) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+
+    // --- State ---
+    let text = '';
+    let trace = [];
+    let portraitData = '';
+    let isPortrait = false;
+    let isReplaying = false;
+    let replayTimer = null;
+    let pauseTimer = null;
+
+    const PAUSE_MS = 1500;
+
+    // --- Draw ---
+    function draw() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + 'px';
+      canvas.style.height = rect.height + 'px';
+      ctx.scale(dpr, dpr);
+
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      ctx.strokeStyle = '#B9AFA0';
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.2;
+      for (let x = 0; x <= rect.width; x += 20) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
+      }
+      for (let y = 0; y <= rect.height; y += 20) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      if (trace.length < 2) return;
+
+      const pad = 20;
+      const w = rect.width - pad * 2;
+      const h = rect.height - pad * 2;
+      const maxY = Math.max(...trace.map(p => p.y), 1);
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#3F6F5E';
+      ctx.lineWidth = 2;
+      ctx.shadowColor = '#3F6F5E';
+      ctx.shadowBlur = 6;
+
+      trace.forEach((p, i) => {
+        const x = pad + (p.x / (trace.length - 1 || 1)) * w;
+        const y = rect.height - pad - (p.y / maxY) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.shadowBlur = 0;
     }
-    ctx.globalAlpha = 1;
 
-    if (trace.length < 2) return;
+    // --- Show portrait ---
+    function showPortrait() {
+      log('showPortrait called');
+      isPortrait = true;
+      inputState.classList.add('hidden');
+      portraitState.classList.add('visible');
+      replayBtn.disabled = false;
+      commitBtn.disabled = true;
+      footer.textContent = 'portrait — tap replay to watch the trace again';
+      log('portrait visible');
 
-    const pad = 20;
-    const w = rect.width - pad * 2;
-    const h = rect.height - pad * 2;
-    const maxY = Math.max(...trace.map(p => p.y), 1);
+      const chars = portraitData.split('');
+      log('chars: ' + chars.length);
 
-    ctx.beginPath();
-    ctx.strokeStyle = '#3F6F5E';
-    ctx.lineWidth = 2;
-    ctx.shadowColor = '#3F6F5E';
-    ctx.shadowBlur = 6;
+      portraitTextEl.innerHTML = '';
+      chars.forEach((ch, i) => {
+        const weight = 300 + (i / Math.max(chars.length - 1, 1)) * 500;
+        const width = 50 + (i / Math.max(chars.length - 1, 1)) * 100;
+        const slant = (i / Math.max(chars.length - 1, 1)) * 15;
+        const span = document.createElement('span');
+        span.textContent = ch;
+        span.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'slnt' ${slant}`;
+        span.style.transition = `font-variation-settings 0.4s ease ${i * 20}ms`;
+        portraitTextEl.appendChild(span);
+      });
+      log('portrait rendered');
+    }
 
-    trace.forEach((p, i) => {
-      const x = pad + (p.x / (trace.length - 1 || 1)) * w;
-      const y = rect.height - pad - (p.y / maxY) * h;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-  }
-
-  // --- Show portrait ---
-  function showPortrait() {
-    isPortrait = true;
-    inputState.classList.add('hidden');
-    portraitState.classList.add('visible');
-    replayBtn.disabled = false;
-    commitBtn.disabled = true;
-    footer.textContent = 'portrait — tap replay to watch the trace again';
-
-    const chars = portraitData.split('');
-
-    portraitTextEl.innerHTML = '';
-    chars.forEach((ch, i) => {
-      const weight = 300 + (i / Math.max(chars.length - 1, 1)) * 500;
-      const width = 50 + (i / Math.max(chars.length - 1, 1)) * 100;
-      const slant = (i / Math.max(chars.length - 1, 1)) * 15;
-      const span = document.createElement('span');
-      span.textContent = ch;
-      span.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'slnt' ${slant}`;
-      span.style.transition = `font-variation-settings 0.4s ease ${i * 20}ms`;
-      portraitTextEl.appendChild(span);
-    });
-  }
-
-  // --- Commit ---
-  function commit() {
-    if (isPortrait || text.trim().length === 0) return;
-    clearTimeout(pauseTimer);
-    portraitData = text;
-    showPortrait();
-  }
-
-  // --- Reset ---
-  function resetToInput() {
-    clearTimeout(pauseTimer);
-    clearTimeout(replayTimer);
-    isPortrait = false;
-    isReplaying = false;
-    text = '';
-    trace = [];
-    portraitData = '';
-    textInput.value = '';
-    inputState.classList.remove('hidden');
-    portraitState.classList.remove('visible');
-    replayBtn.disabled = true;
-    commitBtn.disabled = true;
-    footer.textContent = 'type something, then tap "reveal"';
-    draw();
-    textInput.focus();
-  }
-
-  // --- Replay ---
-  function replay() {
-    if (isReplaying || portraitData.length === 0) return;
-    isReplaying = true;
-    replayBtn.disabled = true;
-
-    const chars = portraitData.split('');
-    const pts = [];
-    chars.forEach((_, i) => {
-      pts.push({ x: i, y: (i / Math.max(chars.length - 1, 1)) });
-    });
-    trace = pts;
-
-    inputState.classList.remove('hidden');
-    portraitState.classList.remove('visible');
-    draw();
-
-    let step = 0;
-    function stepReplay() {
-      if (step >= pts.length) {
-        isReplaying = false;
-        showPortrait();
+    // --- Commit ---
+    function commit() {
+      log('commit called, isPortrait=' + isPortrait + ', text length=' + text.trim().length);
+      if (isPortrait || text.trim().length === 0) {
+        log('commit blocked');
         return;
       }
-      trace = pts.slice(0, step + 1);
-      draw();
-      step++;
-      replayTimer = setTimeout(stepReplay, 60);
+      clearTimeout(pauseTimer);
+      portraitData = text;
+      log('portraitData set to: ' + portraitData);
+      showPortrait();
     }
-    stepReplay();
-  }
 
-  // --- Input ---
-  function onInput(e) {
-    if (isPortrait) return;
-    const val = e.target.value;
-    text = val;
-
-    const chars = val.split('');
-    trace = chars.map((_, i) => ({
-      x: i,
-      y: (i / Math.max(chars.length - 1, 1))
-    }));
-
-    draw();
-
-    // Enable/disable commit button
-    if (val.trim().length > 0) {
-      commitBtn.disabled = false;
-    } else {
+    // --- Reset ---
+    function resetToInput() {
+      log('resetToInput');
+      clearTimeout(pauseTimer);
+      clearTimeout(replayTimer);
+      isPortrait = false;
+      isReplaying = false;
+      text = '';
+      trace = [];
+      portraitData = '';
+      textInput.value = '';
+      inputState.classList.remove('hidden');
+      portraitState.classList.remove('visible');
+      replayBtn.disabled = true;
       commitBtn.disabled = true;
+      footer.textContent = 'type something, then tap "reveal"';
+      draw();
+      textInput.focus();
     }
 
-    // Reset pause timer on each input
-    clearTimeout(pauseTimer);
-    if (val.trim().length > 0) {
-      pauseTimer = setTimeout(commit, PAUSE_MS);
+    // --- Replay ---
+    function replay() {
+      log('replay called');
+      if (isReplaying || portraitData.length === 0) {
+        log('replay blocked');
+        return;
+      }
+      isReplaying = true;
+      replayBtn.disabled = true;
+
+      const chars = portraitData.split('');
+      const pts = [];
+      chars.forEach((_, i) => {
+        pts.push({ x: i, y: (i / Math.max(chars.length - 1, 1)) });
+      });
+      trace = pts;
+
+      inputState.classList.remove('hidden');
+      portraitState.classList.remove('visible');
+      draw();
+
+      let step = 0;
+      function stepReplay() {
+        if (step >= pts.length) {
+          isReplaying = false;
+          log('replay done');
+          showPortrait();
+          return;
+        }
+        trace = pts.slice(0, step + 1);
+        draw();
+        step++;
+        replayTimer = setTimeout(stepReplay, 60);
+      }
+      stepReplay();
     }
-  }
 
-  // --- Resize ---
-  function onResize() {
-    if (!isPortrait || isReplaying) draw();
-  }
+    // --- Input ---
+    function onInput(e) {
+      log('input event, value length=' + e.target.value.length);
+      if (isPortrait) {
+        log('ignored, isPortrait true');
+        return;
+      }
+      const val = e.target.value;
+      text = val;
 
-  // --- Init ---
-  function init() {
-    textInput.addEventListener('input', onInput);
-    commitBtn.addEventListener('click', commit);
-    replayBtn.addEventListener('click', replay);
-    window.addEventListener('resize', onResize);
-    draw();
-    textInput.focus();
-  }
+      const chars = val.split('');
+      trace = chars.map((_, i) => ({
+        x: i,
+        y: (i / Math.max(chars.length - 1, 1))
+      }));
 
-  document.fonts.load('16px Recursive').then(init).catch(init);
-  if (document.readyState === 'complete') setTimeout(init, 100);
-  else document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
+      draw();
+
+      if (val.trim().length > 0) {
+        commitBtn.disabled = false;
+        log('commitBtn enabled');
+      } else {
+        commitBtn.disabled = true;
+        log('commitBtn disabled');
+      }
+
+      clearTimeout(pauseTimer);
+      if (val.trim().length > 0) {
+        pauseTimer = setTimeout(commit, PAUSE_MS);
+        log('pause timer set');
+      }
+    }
+
+    // --- Resize ---
+    function onResize() {
+      if (!isPortrait || isReplaying) draw();
+    }
+
+    // --- Init ---
+    function init() {
+      log('init called');
+      textInput.addEventListener('input', onInput);
+      commitBtn.addEventListener('click', function(e) {
+        log('commitBtn clicked');
+        commit();
+      });
+      replayBtn.addEventListener('click', replay);
+      window.addEventListener('resize', onResize);
+      draw();
+      textInput.focus();
+      log('init complete');
+    }
+
+    document.fonts.load('16px Recursive').then(function() {
+      log('font loaded');
+      init();
+    }).catch(function() {
+      log('font load failed, starting anyway');
+      init();
+    });
+
+    if (document.readyState === 'complete') {
+      setTimeout(function() { init(); }, 100);
+    } else {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() { init(); }, 100);
+      });
+    }
+  })();
 </script>
 </body>
 </html>
