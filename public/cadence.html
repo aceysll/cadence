@@ -106,6 +106,28 @@
       width: 100%;
     }
 
+    #commitBtn {
+      background: none;
+      border: 1px solid #171512;
+      color: #171512;
+      padding: 4px 16px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.08em;
+      border-radius: 0;
+      text-transform: uppercase;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    #commitBtn:hover:not(:disabled) {
+      background: #171512;
+      color: #E7E2D6;
+      border-color: #171512;
+    }
+    #commitBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
     #portraitState {
       flex: 1;
       display: none;
@@ -159,6 +181,7 @@
     <div id="inputRow">
       <span class="prompt">&gt;</span>
       <input type="text" id="textInput" placeholder="type something…" autofocus />
+      <button id="commitBtn" disabled>reveal</button>
     </div>
   </div>
 
@@ -167,7 +190,7 @@
   </div>
 </div>
 
-<div class="footer" id="footer">press Enter to see your portrait</div>
+<div class="footer" id="footer">type something, then tap "reveal"</div>
 
 <script>
   // --- DOM ---
@@ -179,6 +202,7 @@
   const ctx = canvas.getContext('2d');
   const footer = document.getElementById('footer');
   const replayBtn = document.getElementById('replayBtn');
+  const commitBtn = document.getElementById('commitBtn');
 
   // --- State ---
   let text = '';
@@ -187,6 +211,9 @@
   let isPortrait = false;
   let isReplaying = false;
   let replayTimer = null;
+  let pauseTimer = null;
+
+  const PAUSE_MS = 1500;
 
   // --- Draw ---
   function draw() {
@@ -200,7 +227,6 @@
 
     ctx.clearRect(0, 0, rect.width, rect.height);
 
-    // grid
     ctx.strokeStyle = '#B9AFA0';
     ctx.lineWidth = 0.5;
     ctx.globalAlpha = 0.2;
@@ -241,15 +267,16 @@
     inputState.classList.add('hidden');
     portraitState.classList.add('visible');
     replayBtn.disabled = false;
+    commitBtn.disabled = true;
     footer.textContent = 'portrait — tap replay to watch the trace again';
 
     const chars = portraitData.split('');
 
     portraitTextEl.innerHTML = '';
     chars.forEach((ch, i) => {
-      const weight = 300 + (i / chars.length) * 500;
-      const width = 50 + (i / chars.length) * 100;
-      const slant = (i / chars.length) * 15;
+      const weight = 300 + (i / Math.max(chars.length - 1, 1)) * 500;
+      const width = 50 + (i / Math.max(chars.length - 1, 1)) * 100;
+      const slant = (i / Math.max(chars.length - 1, 1)) * 15;
       const span = document.createElement('span');
       span.textContent = ch;
       span.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'slnt' ${slant}`;
@@ -261,12 +288,14 @@
   // --- Commit ---
   function commit() {
     if (isPortrait || text.trim().length === 0) return;
+    clearTimeout(pauseTimer);
     portraitData = text;
     showPortrait();
   }
 
   // --- Reset ---
   function resetToInput() {
+    clearTimeout(pauseTimer);
     clearTimeout(replayTimer);
     isPortrait = false;
     isReplaying = false;
@@ -277,7 +306,8 @@
     inputState.classList.remove('hidden');
     portraitState.classList.remove('visible');
     replayBtn.disabled = true;
-    footer.textContent = 'press Enter to see your portrait';
+    commitBtn.disabled = true;
+    footer.textContent = 'type something, then tap "reveal"';
     draw();
     textInput.focus();
   }
@@ -291,7 +321,7 @@
     const chars = portraitData.split('');
     const pts = [];
     chars.forEach((_, i) => {
-      pts.push({ x: i, y: (i / chars.length) });
+      pts.push({ x: i, y: (i / Math.max(chars.length - 1, 1)) });
     });
     trace = pts;
 
@@ -320,7 +350,6 @@
     const val = e.target.value;
     text = val;
 
-    // Simple trace: each char adds a point
     const chars = val.split('');
     trace = chars.map((_, i) => ({
       x: i,
@@ -328,12 +357,18 @@
     }));
 
     draw();
-  }
 
-  function onKey(e) {
-    if (e.key === 'Enter' && text.trim().length > 0 && !isPortrait) {
-      e.preventDefault();
-      commit();
+    // Enable/disable commit button
+    if (val.trim().length > 0) {
+      commitBtn.disabled = false;
+    } else {
+      commitBtn.disabled = true;
+    }
+
+    // Reset pause timer on each input
+    clearTimeout(pauseTimer);
+    if (val.trim().length > 0) {
+      pauseTimer = setTimeout(commit, PAUSE_MS);
     }
   }
 
@@ -345,7 +380,7 @@
   // --- Init ---
   function init() {
     textInput.addEventListener('input', onInput);
-    textInput.addEventListener('keydown', onKey);
+    commitBtn.addEventListener('click', commit);
     replayBtn.addEventListener('click', replay);
     window.addEventListener('resize', onResize);
     draw();
