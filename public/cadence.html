@@ -70,7 +70,7 @@
       display: flex;
       flex-direction: column;
     }
-    #inputState.hidden { display: none; }
+    #inputState.hidden { display: none !important; }
 
     #traceContainer {
       flex: 1;
@@ -136,7 +136,7 @@
       padding: 40px 20px;
       background: #E7E2D6;
     }
-    #portraitState.visible { display: flex; }
+    #portraitState.visible { display: flex !important; }
 
     #portraitText {
       font-family: 'Recursive', sans-serif;
@@ -211,7 +211,6 @@
 
 <script>
   (function() {
-    // --- DOM ---
     const inputState = document.getElementById('inputState');
     const portraitState = document.getElementById('portraitState');
     const portraitTextEl = document.getElementById('portraitText');
@@ -230,7 +229,6 @@
       console.log(msg);
     }
 
-    // --- State ---
     let text = '';
     let trace = [];
     let portraitData = '';
@@ -241,7 +239,6 @@
 
     const PAUSE_MS = 1500;
 
-    // --- Draw ---
     function draw() {
       const rect = canvas.parentElement.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -287,7 +284,6 @@
       ctx.shadowBlur = 0;
     }
 
-    // --- Show portrait ---
     function showPortrait() {
       log('showPortrait called');
       isPortrait = true;
@@ -313,9 +309,13 @@
         portraitTextEl.appendChild(span);
       });
       log('portrait rendered');
+      
+      // Force visibility check
+      const rect = portraitState.getBoundingClientRect();
+      log('portraitState rect: ' + rect.width + 'x' + rect.height);
+      log('portraitState display: ' + window.getComputedStyle(portraitState).display);
     }
 
-    // --- Commit ---
     function commit() {
       log('commit called, isPortrait=' + isPortrait + ', text length=' + text.trim().length);
       if (isPortrait || text.trim().length === 0) {
@@ -328,7 +328,6 @@
       showPortrait();
     }
 
-    // --- Reset ---
     function resetToInput() {
       log('resetToInput');
       clearTimeout(pauseTimer);
@@ -348,7 +347,6 @@
       textInput.focus();
     }
 
-    // --- Replay ---
     function replay() {
       log('replay called');
       if (isReplaying || portraitData.length === 0) {
@@ -385,7 +383,6 @@
       stepReplay();
     }
 
-    // --- Input ---
     function onInput(e) {
       log('input event, value length=' + e.target.value.length);
       if (isPortrait) {
@@ -418,12 +415,10 @@
       }
     }
 
-    // --- Resize ---
     function onResize() {
       if (!isPortrait || isReplaying) draw();
     }
 
-    // --- Init ---
     function init() {
       log('init called');
       textInput.addEventListener('input', onInput);
