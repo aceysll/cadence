@@ -16,7 +16,6 @@ function App() {
   const [typedText, setTypedText] = useState("");
   const [gaps, setGaps] = useState([]);
   const [timestamps, setTimestamps] = useState([]);
-  const [isActive, setIsActive] = useState(false);
   const [state, setState] = useState("input");
   const [portraitText, setPortraitText] = useState("");
   const [portraitGaps, setPortraitGaps] = useState([]);
@@ -127,7 +126,6 @@ function App() {
     setPortraitText(typedText);
     setPortraitGaps([...gaps]);
     setState("portrait");
-    setIsActive(false);
 
     const validGaps = gaps.filter(g => g > 0);
     const avgGap = validGaps.length > 0
@@ -144,7 +142,6 @@ function App() {
     setGaps([]);
     setTimestamps([]);
     setState("input");
-    setIsActive(false);
     setPortraitText("");
     setPortraitGaps([]);
     setFooterData({ avgGap: 0, peakCount: 0 });
@@ -193,55 +190,47 @@ function App() {
     animateReplay();
   }, [portraitText, portraitGaps, drawTrace, isReplaying]);
 
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (state === "portrait" || state === "replaying") return;
+  // Handle text input and keystroke timing
+  const handleInputChange = useCallback((e) => {
+    const newText = e.target.value;
+    const now = performance.now();
 
-      const now = performance.now();
-
-      if (e.key === "Enter" && typedText.trim().length > 0) {
-        commitTyping();
-        return;
-      }
-
-      if (e.key === "Backspace") {
-        const newText = typedText.slice(0, -1);
-        setTypedText(newText);
-        setGaps(gaps.slice(0, -1));
-        setTimestamps(timestamps.slice(0, -1));
-        if (tracePoints.current.length > 0) {
-          tracePoints.current = tracePoints.current.slice(0, -1);
-        }
-        drawTrace();
-        clearTimeout(pauseTimer.current);
-        if (newText.length > 0) {
-          pauseTimer.current = setTimeout(commitTyping, PAUSE_THRESHOLD);
-        }
-        return;
-      }
-
-      if (e.key.length > 1) return;
-
-      const newText = typedText + e.key;
+    // If text is shorter, user deleted
+    if (newText.length < typedText.length) {
       setTypedText(newText);
-
-      const lastTimestamp = timestamps[timestamps.length - 1] || 0;
-      const gap = lastTimestamp > 0 ? now - lastTimestamp : 0;
-      setGaps([...gaps, gap]);
-      setTimestamps([...timestamps, now]);
-
-      const normalizedGap = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
-      const normalizedY = (normalizedGap - MIN_GAP) / (MAX_GAP - MIN_GAP);
-      tracePoints.current.push({ x: tracePoints.current.length, y: normalizedY });
-
+      setGaps(gaps.slice(0, newText.length));
+      setTimestamps(timestamps.slice(0, newText.length));
+      if (tracePoints.current.length > newText.length) {
+        tracePoints.current = tracePoints.current.slice(0, newText.length);
+      }
       drawTrace();
-      setIsActive(true);
+      return;
+    }
 
-      clearTimeout(pauseTimer.current);
-      pauseTimer.current = setTimeout(commitTyping, PAUSE_THRESHOLD);
-    },
-    [typedText, gaps, timestamps, state, commitTyping, drawTrace]
-  );
+    // Added a character
+    const lastTimestamp = timestamps[timestamps.length - 1] || 0;
+    const gap = lastTimestamp > 0 ? now - lastTimestamp : 0;
+
+    setTypedText(newText);
+    setGaps([...gaps, gap]);
+    setTimestamps([...timestamps, now]);
+
+    const normalizedGap = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
+    const normalizedY = (normalizedGap - MIN_GAP) / (MAX_GAP - MIN_GAP);
+    tracePoints.current.push({ x: tracePoints.current.length, y: normalizedY });
+
+    drawTrace();
+
+    clearTimeout(pauseTimer.current);
+    pauseTimer.current = setTimeout(commitTyping, PAUSE_THRESHOLD);
+  }, [typedText, gaps, timestamps, commitTyping, drawTrace]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === "Enter" && typedText.trim().length > 0) {
+      e.preventDefault();
+      commitTyping();
+    }
+  }, [typedText, commitTyping]);
 
   const renderPortrait = () => {
     if (state !== "portrait" && state !== "replaying") return null;
@@ -495,20 +484,22 @@ function App() {
                 ref={inputRef}
                 type="text"
                 value={typedText}
-                onChange={() => {}}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
                 placeholder="type something..."
                 style={{
                   background: "none",
                   border: "none",
                   outline: "none",
                   color: PALETTE.ink,
-                  fontSize: 14,
+                  fontSize: "16px",
                   fontFamily: "'IBM Plex Mono', monospace",
                   flex: 1,
                   padding: "4px 0",
                   caretColor: PALETTE.gold,
+                  WebkitTransform: "scale(1)",
+                  transform: "scale(1)",
                 }}
-                onKeyDown={handleKeyDown}
                 autoFocus
               />
               {typedText.length > 0 && (
