@@ -13,9 +13,7 @@
       font-style: oblique -15deg 0deg;
       font-display: swap;
     }
-
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       background: #E7E2D6;
       font-family: 'IBM Plex Mono', monospace;
@@ -25,55 +23,19 @@
       min-height: 100vh;
       height: 100vh;
       overflow: hidden;
-      position: relative;
     }
-
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      z-index: 0;
-      background-image:
-        linear-gradient(rgba(185, 175, 160, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(185, 175, 160, 0.03) 1px, transparent 1px);
-      background-size: 20px 20px;
-    }
-
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 12px 20px;
       border-bottom: 1px solid #B9AFA0;
-      background: #E7E2D6;
-      z-index: 20;
-      position: relative;
       flex-shrink: 0;
     }
-
-    .top-bar .brand {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .top-bar .brand span:first-child {
-      font-size: 12px;
-      letter-spacing: 0.1em;
-      font-weight: 600;
-    }
-
-    .top-bar .brand span:last-child {
-      font-size: 10px;
-      color: #B9AFA0;
-    }
-
-    .top-bar .controls {
-      display: flex;
-      gap: 12px;
-    }
-
+    .top-bar .brand { display: flex; align-items: center; gap: 16px; }
+    .top-bar .brand span:first-child { font-size: 12px; letter-spacing: 0.1em; font-weight: 600; }
+    .top-bar .brand span:last-child { font-size: 10px; color: #B9AFA0; }
+    .top-bar .controls { display: flex; gap: 12px; }
     .top-bar .controls button {
       background: none;
       border: 1px solid #B9AFA0;
@@ -87,84 +49,52 @@
       text-transform: uppercase;
       transition: background 0.15s, color 0.15s, border-color 0.15s;
     }
-
     .top-bar .controls button:hover:not(:disabled) {
       background: #171512;
       color: #E7E2D6;
       border-color: #171512;
     }
-
-    .top-bar .controls button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    .top-bar .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .main-area {
       flex: 1;
       display: flex;
       flex-direction: column;
       position: relative;
-      z-index: 1;
       overflow: hidden;
     }
 
-    .input-state {
+    /* --- Input state --- */
+    #inputState {
       flex: 1;
-      padding: 20px 20px 10px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      position: relative;
-      min-height: 60vh;
     }
+    #inputState.hidden { display: none; }
 
-    .input-state.hidden {
-      display: none;
-    }
-
-    .trace-container {
+    #traceContainer {
       flex: 1;
       position: relative;
-      background: #E7E2D6;
       border: 1px solid #B9AFA0;
-      border-radius: 0;
-      overflow: hidden;
       min-height: 200px;
+      background: #E7E2D6;
     }
-
-    .trace-container canvas {
+    #traceContainer canvas {
       display: block;
       width: 100%;
       height: 100%;
-      background: #E7E2D6;
     }
 
-    .trace-container .grid-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      z-index: 1;
-      background-image:
-        linear-gradient(rgba(185, 175, 160, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(185, 175, 160, 0.05) 1px, transparent 1px);
-      background-size: 20px 20px;
-    }
-
-    .input-row {
+    #inputRow {
       padding-top: 16px;
       display: flex;
       align-items: center;
       gap: 8px;
       border-top: 1px solid #B9AFA0;
-      margin-top: auto;
     }
-
-    .input-row .prompt {
-      font-size: 12px;
-      color: #B9AFA0;
-      user-select: none;
-    }
-
-    .input-row input {
+    #inputRow .prompt { font-size: 12px; color: #B9AFA0; }
+    #inputRow input {
       background: none;
       border: none;
       outline: none;
@@ -176,28 +106,20 @@
       caret-color: #C89B3C;
       width: 100%;
     }
+    #inputRow .char-count { font-size: 10px; color: #B9AFA0; }
 
-    .input-row .char-count {
-      font-size: 10px;
-      color: #B9AFA0;
-      font-family: 'IBM Plex Mono', monospace;
-    }
-
-    .portrait-state {
+    /* --- Portrait state --- */
+    #portraitState {
       flex: 1;
       display: none;
       align-items: center;
       justify-content: center;
       padding: 40px 20px;
       background: #E7E2D6;
-      width: 100%;
     }
+    #portraitState.visible { display: flex; }
 
-    .portrait-state.visible {
-      display: flex;
-    }
-
-    .portrait-state .portrait-text {
+    #portraitText {
       font-family: 'Recursive', sans-serif;
       font-size: clamp(28px, 7vw, 64px);
       line-height: 1.3;
@@ -207,381 +129,308 @@
       text-align: center;
       word-break: break-word;
     }
-
-    .portrait-state .portrait-text span {
+    #portraitText span {
       display: inline-block;
       margin-right: 2px;
-      transition: font-variation-settings 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
+    /* --- Footer --- */
     .footer {
       padding: 8px 20px;
       border-top: 1px solid #B9AFA0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #E7E2D6;
-      z-index: 20;
-      position: relative;
+      text-align: center;
       font-size: 9px;
       color: #B9AFA0;
       font-family: 'IBM Plex Mono', monospace;
-      letter-spacing: 0.04em;
       flex-shrink: 0;
-    }
-
-    .hidden {
-      display: none !important;
     }
   </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="brand">
-    <span>cadence</span>
-    <span>by ace</span>
-  </div>
+  <div class="brand"><span>cadence</span><span>by ace</span></div>
   <div class="controls">
     <button id="replayBtn" disabled>replay</button>
   </div>
 </div>
 
-<div class="main-area" id="mainArea">
-  <div class="input-state" id="inputState">
-    <div class="trace-container">
+<div class="main-area">
+  <div id="inputState">
+    <div id="traceContainer">
       <canvas id="traceCanvas"></canvas>
-      <div class="grid-overlay"></div>
     </div>
-    <div class="input-row">
+    <div id="inputRow">
       <span class="prompt">&gt;</span>
       <input type="text" id="textInput" placeholder="type something…" autofocus />
-      <span class="char-count" id="charCount">0 chars</span>
+      <span class="char-count" id="charCount">0</span>
     </div>
   </div>
 
-  <div class="portrait-state" id="portraitState">
-    <div class="portrait-text" id="portraitText"></div>
+  <div id="portraitState">
+    <div id="portraitText"></div>
   </div>
 </div>
 
-<div class="footer" id="footer">
-  avg gap: 0ms &bull; peaks: 0
-</div>
+<div class="footer" id="footer">avg gap: 0ms &bull; peaks: 0</div>
 
 <script>
-  (function() {
-    const inputState = document.getElementById('inputState');
-    const portraitState = document.getElementById('portraitState');
-    const portraitTextEl = document.getElementById('portraitText');
-    const textInput = document.getElementById('textInput');
-    const charCount = document.getElementById('charCount');
-    const canvas = document.getElementById('traceCanvas');
-    const ctx = canvas.getContext('2d');
-    const footer = document.getElementById('footer');
-    const replayBtn = document.getElementById('replayBtn');
+  // --- DOM refs ---
+  const inputState = document.getElementById('inputState');
+  const portraitState = document.getElementById('portraitState');
+  const portraitTextEl = document.getElementById('portraitText');
+  const textInput = document.getElementById('textInput');
+  const charCount = document.getElementById('charCount');
+  const canvas = document.getElementById('traceCanvas');
+  const ctx = canvas.getContext('2d');
+  const footer = document.getElementById('footer');
+  const replayBtn = document.getElementById('replayBtn');
 
-    let typedText = '';
-    let gaps = [];
-    let timestamps = [];
-    let tracePoints = [];
-    let state = 'input';
-    let portraitGaps = [];
-    let portraitText = '';
-    let footerData = { avgGap: 0, peakCount: 0 };
-    let isReplaying = false;
-    let pauseTimer = null;
-    let replayTimer = null;
-    let isCommitted = false;
+  // --- State ---
+  let text = '';
+  let gaps = [];
+  let trace = [];
+  let isPortrait = false;
+  let isReplaying = false;
+  let pauseTimer = null;
+  let replayTimer = null;
+  let portraitData = { text: '', gaps: [] };
+  let stats = { avgGap: 0, peaks: 0 };
 
-    const PAUSE_THRESHOLD = 1500;
-    const MIN_GAP = 20;
-    const MAX_GAP = 400;
-    const PALETTE = {
-      paper: '#E7E2D6',
-      ink: '#171512',
-      phosphor: '#3F6F5E',
-      gold: '#C89B3C',
-      grid: '#B9AFA0',
-    };
+  const PAUSE_MS = 1500;
+  const MIN_GAP = 20;
+  const MAX_GAP = 400;
 
-    function findPeaks(points) {
-      if (points.length < 3) return [];
-      const peaks = [];
-      for (let i = 1; i < points.length - 1; i++) {
-        if (points[i].y > points[i-1].y && points[i].y > points[i+1].y) {
-          peaks.push(i);
-        }
-      }
-      return peaks;
+  // --- Helpers ---
+  function findPeaks(points) {
+    if (points.length < 3) return [];
+    const p = [];
+    for (let i = 1; i < points.length - 1; i++) {
+      if (points[i].y > points[i-1].y && points[i].y > points[i+1].y) p.push(i);
     }
+    return p;
+  }
 
-    function drawTrace() {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = rect.width + 'px';
-      canvas.style.height = rect.height + 'px';
-      ctx.scale(dpr, dpr);
+  // --- Draw ---
+  function draw() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    ctx.scale(dpr, dpr);
 
-      ctx.clearRect(0, 0, rect.width, rect.height);
+    ctx.clearRect(0, 0, rect.width, rect.height);
 
-      ctx.strokeStyle = PALETTE.grid;
-      ctx.lineWidth = 0.5;
-      ctx.globalAlpha = 0.3;
-      const gridSize = 20;
-      for (let x = 0; x <= rect.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, rect.height);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= rect.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(rect.width, y);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
+    // grid
+    ctx.strokeStyle = '#B9AFA0';
+    ctx.lineWidth = 0.5;
+    ctx.globalAlpha = 0.2;
+    for (let x = 0; x <= rect.width; x += 20) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, rect.height); ctx.stroke();
+    }
+    for (let y = 0; y <= rect.height; y += 20) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(rect.width, y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
 
-      if (tracePoints.length < 2) return;
+    if (trace.length < 2) return;
 
-      const padding = 20;
-      const drawWidth = rect.width - padding * 2;
-      const maxVal = Math.max(...tracePoints.map(p => p.y), 1);
+    const pad = 20;
+    const w = rect.width - pad * 2;
+    const h = rect.height - pad * 2;
+    const maxY = Math.max(...trace.map(p => p.y), 1);
 
+    ctx.beginPath();
+    ctx.strokeStyle = '#3F6F5E';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = '#3F6F5E';
+    ctx.shadowBlur = 6;
+
+    trace.forEach((p, i) => {
+      const x = pad + (p.x / (trace.length - 1 || 1)) * w;
+      const y = rect.height - pad - (p.y / maxY) * h;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    ctx.shadowBlur = 0;
+    const peaks = findPeaks(trace);
+    peaks.forEach(idx => {
+      const p = trace[idx];
+      const x = pad + (p.x / (trace.length - 1 || 1)) * w;
+      const y = rect.height - pad - (p.y / maxY) * h;
+      ctx.fillStyle = '#C89B3C';
       ctx.beginPath();
-      ctx.strokeStyle = PALETTE.phosphor;
-      ctx.lineWidth = 2;
-      ctx.shadowColor = PALETTE.phosphor;
-      ctx.shadowBlur = 6;
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
 
-      tracePoints.forEach((p, i) => {
-        const x = padding + (p.x / (tracePoints.length - 1 || 1)) * drawWidth;
-        const y = rect.height - padding - (p.y / maxVal) * (rect.height - padding * 2);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+  // --- Show portrait ---
+  function showPortrait() {
+    isPortrait = true;
+    inputState.classList.add('hidden');
+    portraitState.classList.add('visible');
+    replayBtn.disabled = false;
 
-      ctx.shadowBlur = 0;
-      const peaks = findPeaks(tracePoints);
-      peaks.forEach(idx => {
-        const p = tracePoints[idx];
-        const x = padding + (p.x / (tracePoints.length - 1 || 1)) * drawWidth;
-        const y = rect.height - padding - (p.y / maxVal) * (rect.height - padding * 2);
-        ctx.fillStyle = PALETTE.gold;
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    }
+    const chars = portraitData.text.split('');
+    const g = portraitData.gaps;
+    const valid = g.filter(x => x > 0);
+    const minG = Math.min(...valid, 20);
+    const maxG = Math.max(...valid, 200);
 
-    function commitTyping() {
-      if (isCommitted) return;
-      if (typedText.trim().length === 0) return;
-
-      isCommitted = true;
-      clearTimeout(pauseTimer);
-
-      portraitText = typedText;
-      portraitGaps = [...gaps];
-      state = 'portrait';
-
-      const validGaps = gaps.filter(g => g > 0);
-      const avgGap = validGaps.length > 0
-        ? Math.round(validGaps.reduce((a,b) => a+b, 0) / validGaps.length)
-        : 0;
-      const peaks = findPeaks(tracePoints);
-      footerData = { avgGap, peakCount: peaks.length };
-
-      showPortrait();
-    }
-
-    function showPortrait() {
-      inputState.classList.add('hidden');
-      portraitState.classList.add('visible');
-      replayBtn.disabled = false;
-
-      const chars = portraitText.split('');
-      const gapData = portraitGaps;
-      const validGaps = gapData.filter(g => g > 0);
-      const minGap = Math.min(...validGaps, 20);
-      const maxGap = Math.max(...validGaps, 200);
-
-      function getTransform(index) {
-        const gap = gapData[index] || 30;
-        const normalized = Math.max(0, Math.min(1, (gap - minGap) / (maxGap - minGap + 1)));
-        const weight = 300 + normalized * 500;
-        const width = 50 + normalized * 100;
-        const slant = normalized * 15;
-        return { weight, width, slant };
-      }
-
-      portraitTextEl.innerHTML = '';
-      chars.forEach((char, i) => {
-        const t = getTransform(i);
-        const span = document.createElement('span');
-        span.textContent = char;
-        span.style.fontVariationSettings = `'wght' ${t.weight}, 'wdth' ${t.width}, 'slnt' ${t.slant}`;
-        span.style.transitionDelay = (i * 20) + 'ms';
-        portraitTextEl.appendChild(span);
-      });
-
-      updateFooter();
-    }
-
-    function updateFooter() {
-      footer.textContent = `avg gap: ${footerData.avgGap}ms \u2022 peaks: ${footerData.peakCount}` +
-        (state === 'portrait' ? ' \u2022 portrait' : '') +
-        (state === 'replaying' ? ' \u2022 replaying…' : '');
-    }
-
-    function resetAll() {
-      clearTimeout(pauseTimer);
-      clearTimeout(replayTimer);
-      typedText = '';
-      gaps = [];
-      timestamps = [];
-      tracePoints = [];
-      state = 'input';
-      portraitText = '';
-      portraitGaps = [];
-      footerData = { avgGap: 0, peakCount: 0 };
-      isReplaying = false;
-      isCommitted = false;
-
-      textInput.value = '';
-      charCount.textContent = '0 chars';
-      inputState.classList.remove('hidden');
-      portraitState.classList.remove('visible');
-      replayBtn.disabled = true;
-
-      drawTrace();
-      updateFooter();
-      textInput.focus();
-    }
-
-    function replaySession() {
-      if (portraitText.length === 0 || isReplaying) return;
-      isReplaying = true;
-      state = 'replaying';
-      replayBtn.disabled = true;
-
-      const replayGaps = portraitGaps.slice(0, portraitText.length);
-      const points = [];
-      let currentX = 0;
-      replayGaps.forEach(gap => {
-        const normalizedGap = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
-        const normalizedY = (normalizedGap - MIN_GAP) / (MAX_GAP - MIN_GAP);
-        points.push({ x: currentX, y: normalizedY });
-        currentX++;
-      });
-      tracePoints = points;
-
-      let step = 0;
-      const totalSteps = points.length;
-
-      inputState.classList.remove('hidden');
-      portraitState.classList.remove('visible');
-      drawTrace();
-
-      function animateReplay() {
-        if (step >= totalSteps) {
-          state = 'portrait';
-          isReplaying = false;
-          replayBtn.disabled = false;
-          showPortrait();
-          return;
-        }
-        const currentPoints = points.slice(0, step + 1);
-        tracePoints = currentPoints;
-        drawTrace();
-        step++;
-        const delay = Math.min(replayGaps[step] || 30, 150);
-        replayTimer = setTimeout(animateReplay, delay);
-      }
-
-      animateReplay();
-    }
-
-    function handleInput(e) {
-      if (isCommitted) return;
-
-      const newText = e.target.value;
-      const now = performance.now();
-
-      if (newText.length < typedText.length) {
-        typedText = newText;
-        gaps = gaps.slice(0, newText.length);
-        timestamps = timestamps.slice(0, newText.length);
-        if (tracePoints.length > newText.length) {
-          tracePoints = tracePoints.slice(0, newText.length);
-        }
-        charCount.textContent = newText.length + ' chars';
-        drawTrace();
-        return;
-      }
-
-      const lastTimestamp = timestamps[timestamps.length - 1] || 0;
-      const gap = lastTimestamp > 0 ? now - lastTimestamp : 0;
-
-      typedText = newText;
-      gaps.push(gap);
-      timestamps.push(now);
-
-      const normalizedGap = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
-      const normalizedY = (normalizedGap - MIN_GAP) / (MAX_GAP - MIN_GAP);
-      tracePoints.push({ x: tracePoints.length, y: normalizedY });
-
-      charCount.textContent = newText.length + ' chars';
-      drawTrace();
-
-      clearTimeout(pauseTimer);
-      pauseTimer = setTimeout(commitTyping, PAUSE_THRESHOLD);
-    }
-
-    function handleKeyDown(e) {
-      if (e.key === 'Enter' && typedText.trim().length > 0 && !isCommitted) {
-        e.preventDefault();
-        commitTyping();
-      }
-    }
-
-    function handleResize() {
-      if (state === 'input' || state === 'replaying') {
-        drawTrace();
-      }
-    }
-
-    function init() {
-      textInput.addEventListener('input', handleInput);
-      textInput.addEventListener('keydown', handleKeyDown);
-      replayBtn.addEventListener('click', replaySession);
-      window.addEventListener('resize', handleResize);
-      drawTrace();
-      textInput.focus();
-      updateFooter();
-    }
-
-    // Start
-    document.fonts.load('16px Recursive').then(() => {
-      init();
-    }).catch(() => {
-      init();
+    portraitTextEl.innerHTML = '';
+    chars.forEach((ch, i) => {
+      const gap = g[i] || 30;
+      const norm = Math.max(0, Math.min(1, (gap - minG) / (maxG - minG + 1)));
+      const weight = 300 + norm * 500;
+      const width = 50 + norm * 100;
+      const slant = norm * 15;
+      const span = document.createElement('span');
+      span.textContent = ch;
+      span.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'slnt' ${slant}`;
+      span.style.transition = 'font-variation-settings 0.4s ease';
+      span.style.transitionDelay = (i * 20) + 'ms';
+      portraitTextEl.appendChild(span);
     });
 
-    // Fallback
-    if (document.readyState === 'complete') {
-      setTimeout(init, 100);
-    } else {
-      document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(init, 100);
-      });
+    footer.textContent = `avg gap: ${stats.avgGap}ms \u2022 peaks: ${stats.peaks} \u2022 portrait`;
+  }
+
+  // --- Commit ---
+  function commit() {
+    if (isPortrait || text.trim().length === 0) return;
+    clearTimeout(pauseTimer);
+
+    portraitData.text = text;
+    portraitData.gaps = [...gaps];
+
+    const valid = gaps.filter(g => g > 0);
+    stats.avgGap = valid.length > 0 ? Math.round(valid.reduce((a,b) => a+b, 0) / valid.length) : 0;
+    stats.peaks = findPeaks(trace).length;
+
+    showPortrait();
+  }
+
+  // --- Reset to input ---
+  function resetToInput() {
+    clearTimeout(pauseTimer);
+    clearTimeout(replayTimer);
+    isPortrait = false;
+    isReplaying = false;
+    text = '';
+    gaps = [];
+    trace = [];
+    portraitData = { text: '', gaps: [] };
+    textInput.value = '';
+    charCount.textContent = '0';
+    inputState.classList.remove('hidden');
+    portraitState.classList.remove('visible');
+    replayBtn.disabled = true;
+    footer.textContent = 'avg gap: 0ms \u2022 peaks: 0';
+    draw();
+    textInput.focus();
+  }
+
+  // --- Replay ---
+  function replay() {
+    if (isReplaying || portraitData.text.length === 0) return;
+    isReplaying = true;
+    replayBtn.disabled = true;
+
+    const g = portraitData.gaps;
+    const pts = [];
+    let x = 0;
+    g.forEach(gap => {
+      const n = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
+      pts.push({ x: x, y: (n - MIN_GAP) / (MAX_GAP - MIN_GAP) });
+      x++;
+    });
+    trace = pts;
+
+    inputState.classList.remove('hidden');
+    portraitState.classList.remove('visible');
+    draw();
+
+    let step = 0;
+    function stepReplay() {
+      if (step >= pts.length) {
+        isReplaying = false;
+        showPortrait();
+        return;
+      }
+      trace = pts.slice(0, step + 1);
+      draw();
+      step++;
+      const delay = Math.min(g[step] || 30, 150);
+      replayTimer = setTimeout(stepReplay, delay);
+    }
+    stepReplay();
+  }
+
+  // --- Input handlers ---
+  function onInput(e) {
+    if (isPortrait) return;
+    const val = e.target.value;
+    const now = performance.now();
+
+    if (val.length < text.length) {
+      text = val;
+      gaps = gaps.slice(0, val.length);
+      trace = trace.slice(0, val.length);
+      charCount.textContent = val.length;
+      draw();
+      return;
     }
 
-  })();
+    const last = gaps.length > 0 ? gaps[gaps.length - 1] : 0;
+    const gap = last > 0 ? now - timestamps[timestamps.length - 1] : 0;
+    timestamps.push(now);
+
+    text = val;
+    gaps.push(gap);
+
+    const norm = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
+    trace.push({ x: trace.length, y: (norm - MIN_GAP) / (MAX_GAP - MIN_GAP) });
+
+    charCount.textContent = val.length;
+    draw();
+
+    clearTimeout(pauseTimer);
+    pauseTimer = setTimeout(commit, PAUSE_MS);
+  }
+
+  let timestamps = [];
+
+  function onKey(e) {
+    if (e.key === 'Enter' && text.trim().length > 0 && !isPortrait) {
+      e.preventDefault();
+      commit();
+    }
+  }
+
+  // --- Resize ---
+  function onResize() {
+    if (!isPortrait || isReplaying) draw();
+  }
+
+  // --- Init ---
+  function init() {
+    textInput.addEventListener('input', onInput);
+    textInput.addEventListener('keydown', onKey);
+    replayBtn.addEventListener('click', replay);
+    window.addEventListener('resize', onResize);
+    draw();
+    textInput.focus();
+  }
+
+  // Start
+  document.fonts.load('16px Recursive').then(init).catch(init);
+  if (document.readyState === 'complete') setTimeout(init, 100);
+  else document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
 </script>
 </body>
 </html>
