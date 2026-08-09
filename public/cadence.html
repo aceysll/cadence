@@ -28,7 +28,6 @@
       position: relative;
     }
 
-    /* Ambient grid texture */
     body::before {
       content: '';
       position: fixed;
@@ -109,7 +108,6 @@
       overflow: hidden;
     }
 
-    /* Input state */
     .input-state {
       flex: 1;
       padding: 20px 20px 10px;
@@ -117,6 +115,10 @@
       flex-direction: column;
       position: relative;
       min-height: 60vh;
+    }
+
+    .input-state.hidden {
+      display: none;
     }
 
     .trace-container {
@@ -181,15 +183,18 @@
       font-family: 'IBM Plex Mono', monospace;
     }
 
-    /* Portrait state */
     .portrait-state {
       flex: 1;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       padding: 40px 20px;
       background: #E7E2D6;
       width: 100%;
+    }
+
+    .portrait-state.visible {
+      display: flex;
     }
 
     .portrait-state .portrait-text {
@@ -206,9 +211,9 @@
     .portrait-state .portrait-text span {
       display: inline-block;
       margin-right: 2px;
+      transition: font-variation-settings 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
-    /* Footer */
     .footer {
       padding: 8px 20px;
       border-top: 1px solid #B9AFA0;
@@ -243,7 +248,6 @@
 </div>
 
 <div class="main-area" id="mainArea">
-  <!-- Input State -->
   <div class="input-state" id="inputState">
     <div class="trace-container">
       <canvas id="traceCanvas"></canvas>
@@ -256,8 +260,7 @@
     </div>
   </div>
 
-  <!-- Portrait State (hidden by default) -->
-  <div class="portrait-state hidden" id="portraitState">
+  <div class="portrait-state" id="portraitState">
     <div class="portrait-text" id="portraitText"></div>
   </div>
 </div>
@@ -268,7 +271,6 @@
 
 <script>
   (function() {
-    // ----- DOM refs -----
     const inputState = document.getElementById('inputState');
     const portraitState = document.getElementById('portraitState');
     const portraitTextEl = document.getElementById('portraitText');
@@ -279,18 +281,18 @@
     const footer = document.getElementById('footer');
     const replayBtn = document.getElementById('replayBtn');
 
-    // ----- State -----
     let typedText = '';
     let gaps = [];
     let timestamps = [];
     let tracePoints = [];
-    let state = 'input'; // 'input' | 'portrait' | 'replaying'
+    let state = 'input';
     let portraitGaps = [];
     let portraitText = '';
     let footerData = { avgGap: 0, peakCount: 0 };
     let isReplaying = false;
     let pauseTimer = null;
     let replayTimer = null;
+    let isCommitted = false;
 
     const PAUSE_THRESHOLD = 1500;
     const MIN_GAP = 20;
@@ -303,7 +305,6 @@
       grid: '#B9AFA0',
     };
 
-    // ----- Helpers -----
     function findPeaks(points) {
       if (points.length < 3) return [];
       const peaks = [];
@@ -315,7 +316,6 @@
       return peaks;
     }
 
-    // ----- Canvas drawing -----
     function drawTrace() {
       const rect = canvas.parentElement.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -327,7 +327,6 @@
 
       ctx.clearRect(0, 0, rect.width, rect.height);
 
-      // Grid
       ctx.strokeStyle = PALETTE.grid;
       ctx.lineWidth = 0.5;
       ctx.globalAlpha = 0.3;
@@ -379,10 +378,13 @@
       });
     }
 
-    // ----- Commit typing -----
     function commitTyping() {
+      if (isCommitted) return;
       if (typedText.trim().length === 0) return;
+
+      isCommitted = true;
       clearTimeout(pauseTimer);
+
       portraitText = typedText;
       portraitGaps = [...gaps];
       state = 'portrait';
@@ -397,10 +399,9 @@
       showPortrait();
     }
 
-    // ----- Show portrait -----
     function showPortrait() {
       inputState.classList.add('hidden');
-      portraitState.classList.remove('hidden');
+      portraitState.classList.add('visible');
       replayBtn.disabled = false;
 
       const chars = portraitText.split('');
@@ -424,21 +425,19 @@
         const span = document.createElement('span');
         span.textContent = char;
         span.style.fontVariationSettings = `'wght' ${t.weight}, 'wdth' ${t.width}, 'slnt' ${t.slant}`;
-        span.style.transition = `font-variation-settings 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 20}ms`;
+        span.style.transitionDelay = (i * 20) + 'ms';
         portraitTextEl.appendChild(span);
       });
 
       updateFooter();
     }
 
-    // ----- Update footer -----
     function updateFooter() {
       footer.textContent = `avg gap: ${footerData.avgGap}ms \u2022 peaks: ${footerData.peakCount}` +
         (state === 'portrait' ? ' \u2022 portrait' : '') +
         (state === 'replaying' ? ' \u2022 replaying…' : '');
     }
 
-    // ----- Reset -----
     function resetAll() {
       clearTimeout(pauseTimer);
       clearTimeout(replayTimer);
@@ -451,11 +450,12 @@
       portraitGaps = [];
       footerData = { avgGap: 0, peakCount: 0 };
       isReplaying = false;
+      isCommitted = false;
 
       textInput.value = '';
       charCount.textContent = '0 chars';
       inputState.classList.remove('hidden');
-      portraitState.classList.add('hidden');
+      portraitState.classList.remove('visible');
       replayBtn.disabled = true;
 
       drawTrace();
@@ -463,7 +463,6 @@
       textInput.focus();
     }
 
-    // ----- Replay -----
     function replaySession() {
       if (portraitText.length === 0 || isReplaying) return;
       isReplaying = true;
@@ -485,7 +484,7 @@
       const totalSteps = points.length;
 
       inputState.classList.remove('hidden');
-      portraitState.classList.add('hidden');
+      portraitState.classList.remove('visible');
       drawTrace();
 
       function animateReplay() {
@@ -507,8 +506,9 @@
       animateReplay();
     }
 
-    // ----- Input handler -----
     function handleInput(e) {
+      if (isCommitted) return;
+
       const newText = e.target.value;
       const now = performance.now();
 
@@ -543,20 +543,18 @@
     }
 
     function handleKeyDown(e) {
-      if (e.key === 'Enter' && typedText.trim().length > 0) {
+      if (e.key === 'Enter' && typedText.trim().length > 0 && !isCommitted) {
         e.preventDefault();
         commitTyping();
       }
     }
 
-    // ----- Resize -----
     function handleResize() {
       if (state === 'input' || state === 'replaying') {
         drawTrace();
       }
     }
 
-    // ----- Init -----
     function init() {
       textInput.addEventListener('input', handleInput);
       textInput.addEventListener('keydown', handleKeyDown);
@@ -567,21 +565,16 @@
       updateFooter();
     }
 
-    // Wait for fonts to load
+    // Start
     document.fonts.load('16px Recursive').then(() => {
-      console.log('Recursive loaded');
       init();
     }).catch(() => {
-      console.warn('Font load fallback, starting anyway');
       init();
     });
 
-    // Also start on DOM ready
+    // Fallback
     if (document.readyState === 'complete') {
-      if (!document.fonts.check('16px Recursive')) {
-        // Already loaded or fallback
-        setTimeout(init, 100);
-      }
+      setTimeout(init, 100);
     } else {
       document.addEventListener('DOMContentLoaded', () => {
         setTimeout(init, 100);
