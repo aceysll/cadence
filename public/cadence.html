@@ -64,7 +64,6 @@
       overflow: hidden;
     }
 
-    /* --- Input state --- */
     #inputState {
       flex: 1;
       padding: 20px;
@@ -106,9 +105,7 @@
       caret-color: #C89B3C;
       width: 100%;
     }
-    #inputRow .char-count { font-size: 10px; color: #B9AFA0; }
 
-    /* --- Portrait state --- */
     #portraitState {
       flex: 1;
       display: none;
@@ -134,7 +131,6 @@
       margin-right: 2px;
     }
 
-    /* --- Footer --- */
     .footer {
       padding: 8px 20px;
       border-top: 1px solid #B9AFA0;
@@ -163,7 +159,6 @@
     <div id="inputRow">
       <span class="prompt">&gt;</span>
       <input type="text" id="textInput" placeholder="type something…" autofocus />
-      <span class="char-count" id="charCount">0</span>
     </div>
   </div>
 
@@ -172,15 +167,14 @@
   </div>
 </div>
 
-<div class="footer" id="footer">avg gap: 0ms &bull; peaks: 0</div>
+<div class="footer" id="footer">press Enter to see your portrait</div>
 
 <script>
-  // --- DOM refs ---
+  // --- DOM ---
   const inputState = document.getElementById('inputState');
   const portraitState = document.getElementById('portraitState');
   const portraitTextEl = document.getElementById('portraitText');
   const textInput = document.getElementById('textInput');
-  const charCount = document.getElementById('charCount');
   const canvas = document.getElementById('traceCanvas');
   const ctx = canvas.getContext('2d');
   const footer = document.getElementById('footer');
@@ -188,28 +182,11 @@
 
   // --- State ---
   let text = '';
-  let gaps = [];
   let trace = [];
+  let portraitData = '';
   let isPortrait = false;
   let isReplaying = false;
-  let pauseTimer = null;
   let replayTimer = null;
-  let portraitData = { text: '', gaps: [] };
-  let stats = { avgGap: 0, peaks: 0 };
-
-  const PAUSE_MS = 1500;
-  const MIN_GAP = 20;
-  const MAX_GAP = 400;
-
-  // --- Helpers ---
-  function findPeaks(points) {
-    if (points.length < 3) return [];
-    const p = [];
-    for (let i = 1; i < points.length - 1; i++) {
-      if (points[i].y > points[i-1].y && points[i].y > points[i+1].y) p.push(i);
-    }
-    return p;
-  }
 
   // --- Draw ---
   function draw() {
@@ -255,18 +232,7 @@
       else ctx.lineTo(x, y);
     });
     ctx.stroke();
-
     ctx.shadowBlur = 0;
-    const peaks = findPeaks(trace);
-    peaks.forEach(idx => {
-      const p = trace[idx];
-      const x = pad + (p.x / (trace.length - 1 || 1)) * w;
-      const y = rect.height - pad - (p.y / maxY) * h;
-      ctx.fillStyle = '#C89B3C';
-      ctx.beginPath();
-      ctx.arc(x, y, 4, 0, Math.PI * 2);
-      ctx.fill();
-    });
   }
 
   // --- Show portrait ---
@@ -275,79 +241,57 @@
     inputState.classList.add('hidden');
     portraitState.classList.add('visible');
     replayBtn.disabled = false;
+    footer.textContent = 'portrait — tap replay to watch the trace again';
 
-    const chars = portraitData.text.split('');
-    const g = portraitData.gaps;
-    const valid = g.filter(x => x > 0);
-    const minG = Math.min(...valid, 20);
-    const maxG = Math.max(...valid, 200);
+    const chars = portraitData.split('');
 
     portraitTextEl.innerHTML = '';
     chars.forEach((ch, i) => {
-      const gap = g[i] || 30;
-      const norm = Math.max(0, Math.min(1, (gap - minG) / (maxG - minG + 1)));
-      const weight = 300 + norm * 500;
-      const width = 50 + norm * 100;
-      const slant = norm * 15;
+      const weight = 300 + (i / chars.length) * 500;
+      const width = 50 + (i / chars.length) * 100;
+      const slant = (i / chars.length) * 15;
       const span = document.createElement('span');
       span.textContent = ch;
       span.style.fontVariationSettings = `'wght' ${weight}, 'wdth' ${width}, 'slnt' ${slant}`;
-      span.style.transition = 'font-variation-settings 0.4s ease';
-      span.style.transitionDelay = (i * 20) + 'ms';
+      span.style.transition = `font-variation-settings 0.4s ease ${i * 20}ms`;
       portraitTextEl.appendChild(span);
     });
-
-    footer.textContent = `avg gap: ${stats.avgGap}ms \u2022 peaks: ${stats.peaks} \u2022 portrait`;
   }
 
   // --- Commit ---
   function commit() {
     if (isPortrait || text.trim().length === 0) return;
-    clearTimeout(pauseTimer);
-
-    portraitData.text = text;
-    portraitData.gaps = [...gaps];
-
-    const valid = gaps.filter(g => g > 0);
-    stats.avgGap = valid.length > 0 ? Math.round(valid.reduce((a,b) => a+b, 0) / valid.length) : 0;
-    stats.peaks = findPeaks(trace).length;
-
+    portraitData = text;
     showPortrait();
   }
 
-  // --- Reset to input ---
+  // --- Reset ---
   function resetToInput() {
-    clearTimeout(pauseTimer);
     clearTimeout(replayTimer);
     isPortrait = false;
     isReplaying = false;
     text = '';
-    gaps = [];
     trace = [];
-    portraitData = { text: '', gaps: [] };
+    portraitData = '';
     textInput.value = '';
-    charCount.textContent = '0';
     inputState.classList.remove('hidden');
     portraitState.classList.remove('visible');
     replayBtn.disabled = true;
-    footer.textContent = 'avg gap: 0ms \u2022 peaks: 0';
+    footer.textContent = 'press Enter to see your portrait';
     draw();
     textInput.focus();
   }
 
   // --- Replay ---
   function replay() {
-    if (isReplaying || portraitData.text.length === 0) return;
+    if (isReplaying || portraitData.length === 0) return;
     isReplaying = true;
     replayBtn.disabled = true;
 
-    const g = portraitData.gaps;
+    const chars = portraitData.split('');
     const pts = [];
-    let x = 0;
-    g.forEach(gap => {
-      const n = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
-      pts.push({ x: x, y: (n - MIN_GAP) / (MAX_GAP - MIN_GAP) });
-      x++;
+    chars.forEach((_, i) => {
+      pts.push({ x: i, y: (i / chars.length) });
     });
     trace = pts;
 
@@ -365,45 +309,26 @@
       trace = pts.slice(0, step + 1);
       draw();
       step++;
-      const delay = Math.min(g[step] || 30, 150);
-      replayTimer = setTimeout(stepReplay, delay);
+      replayTimer = setTimeout(stepReplay, 60);
     }
     stepReplay();
   }
 
-  // --- Input handlers ---
+  // --- Input ---
   function onInput(e) {
     if (isPortrait) return;
     const val = e.target.value;
-    const now = performance.now();
-
-    if (val.length < text.length) {
-      text = val;
-      gaps = gaps.slice(0, val.length);
-      trace = trace.slice(0, val.length);
-      charCount.textContent = val.length;
-      draw();
-      return;
-    }
-
-    const last = gaps.length > 0 ? gaps[gaps.length - 1] : 0;
-    const gap = last > 0 ? now - timestamps[timestamps.length - 1] : 0;
-    timestamps.push(now);
-
     text = val;
-    gaps.push(gap);
 
-    const norm = Math.min(Math.max(gap, MIN_GAP), MAX_GAP);
-    trace.push({ x: trace.length, y: (norm - MIN_GAP) / (MAX_GAP - MIN_GAP) });
+    // Simple trace: each char adds a point
+    const chars = val.split('');
+    trace = chars.map((_, i) => ({
+      x: i,
+      y: (i / Math.max(chars.length - 1, 1))
+    }));
 
-    charCount.textContent = val.length;
     draw();
-
-    clearTimeout(pauseTimer);
-    pauseTimer = setTimeout(commit, PAUSE_MS);
   }
-
-  let timestamps = [];
 
   function onKey(e) {
     if (e.key === 'Enter' && text.trim().length > 0 && !isPortrait) {
@@ -427,7 +352,6 @@
     textInput.focus();
   }
 
-  // Start
   document.fonts.load('16px Recursive').then(init).catch(init);
   if (document.readyState === 'complete') setTimeout(init, 100);
   else document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
