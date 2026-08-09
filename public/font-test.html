@@ -6,7 +6,7 @@
   <title>Cadence — Font Test</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Recursive&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Recursive:wght,slnt,casl,mono,crsv@300..800,-15..0,0..1,0..1,0..1&family=IBM+Plex+Mono:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
     body {
       background: #E7E2D6;
@@ -80,7 +80,7 @@
   </style>
 </head>
 <body>
-  <h1>cadence — font test (standalone)</h1>
+  <h1>cadence — font test (corrected URL)</h1>
 
   <div class="test-group">
     <label>1. Default (no variation)</label>
@@ -138,16 +138,13 @@
   </div>
 
   <script>
-    // Check if samples look different
     setTimeout(() => {
       const samples = document.querySelectorAll('.sample');
-      const firstText = samples[0].getBoundingClientRect();
-      const secondText = samples[1].getBoundingClientRect();
       const verdict = document.getElementById('verdict');
-
-      // Check if width or height differs significantly
-      const widthDiff = Math.abs(samples[0].offsetWidth - samples[1].offsetWidth);
-      const heightDiff = Math.abs(samples[0].offsetHeight - samples[1].offsetHeight);
+      const widths = Array.from(samples).map(el => el.offsetWidth);
+      const heights = Array.from(samples).map(el => el.offsetHeight);
+      const widthDiff = Math.max(...widths) - Math.min(...widths);
+      const heightDiff = Math.max(...heights) - Math.min(...heights);
 
       if (widthDiff > 10 || heightDiff > 10) {
         verdict.className = 'verdict success';
@@ -167,7 +164,7 @@
             Width diff: ${widthDiff}px &bull; Height diff: ${heightDiff}px
           </p>
           <p style="margin-top: 8px; font-size: 12px; color: #c89b3c;">
-            Check the font URL. Try: https://fonts.googleapis.com/css2?family=Recursive
+            The font URL has been corrected. If this still fails, clear your browser cache and hard refresh.
           </p>
         `;
       }
